@@ -6,7 +6,7 @@ export default async function handler(req,res){
   if(!state||!task){res.status(400).json({ok:false,error:'INVALID_TASK_STATE'});return}
   if(!process.env.GEMINI_API_KEY){res.status(503).json({ok:false,error:'GEMINI_KEY_MISSING'});return}
   try{
-    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':process.env.GEMINI_API_KEY},body:JSON.stringify({contents:[{role:'user',parts:[{text:'نفذ المهمة التالية وأعد JSON فقط بالحقول status, summary, deliverable, evidence, nextActions, requiredTools, confidence. المهمة: '+task.title}]}],generationConfig:{responseMimeType:'application/json',temperature:0.35,maxOutputTokens:1800}})});
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':process.env.GEMINI_API_KEY},body:JSON.stringify({contents:[{role:'user',parts:[{text:'نفذ المهمة التالية وأعد JSON فقط بالحقول status, summary, deliverable, evidence, nextActions, requiredTools, confidence. المهمة: '+task.title}]}],generationConfig:{responseMimeType:'application/json',temperature:0.35,maxOutputTokens:1800}})});
     const d=await r.json();
     if(!r.ok){res.status(502).json({ok:false,error:'GEMINI_'+r.status});return}
     const text=d?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('').trim();
