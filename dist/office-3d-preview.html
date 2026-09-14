@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>NAWAF HQ — Premium 3D Office Preview</title>
+<style>
+:root{--bg:#05080d;--panel:#0b1119e8;--line:#d3a44a44;--gold:#d3a44a;--gold2:#f3d58e;--text:#eef3f8;--muted:#8592a1;--ok:#45d79a;--warn:#e7b65c}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05080d;color:var(--text);font-family:Inter,Segoe UI,Tahoma,Arial,sans-serif}
+body{background:radial-gradient(circle at 50% 20%,#132033 0,#09111a 42%,#05080d 78%)}
+#app{position:relative;width:100%;height:100%}#scene{position:absolute;inset:0}
+.hud{position:absolute;inset:0;pointer-events:none;z-index:10}.top{position:absolute;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.brand,.stats,.side,.hint,.toolbar,.toast{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.brand{pointer-events:auto;background:#09111be8;border:1px solid var(--line);border-radius:16px;padding:11px 14px;box-shadow:0 18px 70px #0009}.brand b{color:var(--gold2);letter-spacing:.7px}.brand small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.stats{display:flex;gap:8px}.stat{background:#09111be8;border:1px solid #ffffff10;border-radius:13px;padding:9px 11px;min-width:94px;box-shadow:0 16px 44px #0007}.stat strong{display:block;font-size:18px}.stat span{font-size:10px;color:var(--muted)}
+.side{position:absolute;right:18px;top:96px;width:318px;background:linear-gradient(180deg,#0d1621ee,#09111aee);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 28px 90px #000b;pointer-events:auto}.eyebrow{font-size:10px;color:var(--gold2);letter-spacing:.6px}.side h3{margin:5px 0 3px;font-size:18px}.role{font-size:11px;color:#aeb9c6}.status{display:inline-flex;align-items:center;gap:7px;margin-top:10px;padding:6px 8px;border:1px solid #ffffff0d;border-radius:10px;background:#111a25;font-size:11px}.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 14px currentColor}.task{margin-top:11px;padding-top:10px;border-top:1px solid #ffffff0b;font-size:12px;line-height:1.7;color:#d5dee7}.progress{height:7px;border-radius:99px;background:#17202b;overflow:hidden;margin-top:9px}.progress i{display:block;height:100%;width:62%;background:linear-gradient(90deg,#986821,#f0ce82);box-shadow:0 0 18px #d3a44a66}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}button{border:1px solid #ffffff12;background:#111a27;color:#edf3f8;border-radius:10px;padding:8px 9px;cursor:pointer;font-weight:650}button:hover{border-color:#d3a44a66;background:#182331}.primary{background:linear-gradient(180deg,#d6aa52,#a97b2a);color:#0b0d10;border-color:#f2d083}
+.toolbar{position:absolute;left:50%;top:16px;transform:translateX(-50%);background:#09111be8;border:1px solid #ffffff10;border-radius:999px;padding:5px;display:flex;gap:5px;pointer-events:auto}.toolbar button{padding:7px 11px;border-radius:999px;font-size:10px}.toolbar .active{border-color:#d3a44a66;color:var(--gold2);background:#151e29}
+.hint{position:absolute;left:16px;bottom:16px;background:#09111be8;border:1px solid #ffffff10;border-radius:13px;padding:9px 11px;color:var(--muted);font-size:10px;line-height:1.6}.toast{position:absolute;left:50%;top:78px;transform:translate(-50%,-8px);opacity:0;background:#0b141ee8;border:1px solid #ffffff18;border-radius:10px;padding:8px 11px;font-size:11px;transition:.2s;box-shadow:0 20px 60px #0009}.toast.show{opacity:1;transform:translate(-50%,0)}
+.label{position:absolute;transform:translate(-50%,-50%);pointer-events:none;background:#071019d9;border:1px solid #ffffff16;border-radius:9px;padding:5px 8px;font-size:10px;color:#e6edf4;white-space:nowrap;box-shadow:0 10px 30px #0008}.label.working{border-color:#45d79a55}.label.ready{border-color:#d3a44a55}
+@media(max-width:900px){.side{width:270px;right:8px;top:86px}.stats .stat:nth-child(n+2){display:none}.brand small{display:none}.toolbar{top:auto;bottom:14px}.hint{display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="scene"></div>
+  <div class="hud">
+    <div class="top">
+      <div class="brand"><b>NAWAF HQ — LIVE 3D OFFICE</b><small>مقر تشغيلي تفاعلي للموظفين والمهام</small></div>
+      <div class="stats"><div class="stat"><strong id="workingCount">3</strong><span>يعمل الآن</span></div><div class="stat"><strong>4</strong><span>أقسام</span></div><div class="stat"><strong>8</strong><span>مهام</span></div></div>
+    </div>
+    <div class="toolbar"><button id="cinematic" class="active">سينمائي</button><button id="overview">نظرة عامة</button><button id="reset">إعادة</button></div>
+    <aside class="side">
+      <div class="eyebrow">AI EMPLOYEE</div><h3 id="empName">فهد</h3><div class="role" id="empRole">AI Product Explorer</div>
+      <div class="status"><span class="dot" id="empDot"></span><span id="empStatus">يعمل الآن</span></div>
+      <div class="task" id="empTask">استكشاف أفكار منتجات جديدة مبنية على مشاريع نواف.</div>
+      <div class="progress"><i id="empProgress"></i></div>
+      <div class="actions"><button class="primary" id="focusBtn">تركيز الكاميرا</button><button id="toggleBtn">تبديل الحالة</button></div>
+    </aside>
+    <div class="hint">اسحب لتدوير المشهد • عجلة الماوس للتقريب • اضغط على الموظف أو القسم</div>
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js';
+
+const root=document.querySelector('#scene');
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;root.appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x05080d,.028);
+const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,100);camera.position.set(11,7.2,12.5);
+let target=new THREE.Vector3(0,1.25,0),yaw=-.72,pitch=.33,distance=17,drag=false,lastX=0,lastY=0;
+const ambient=new THREE.HemisphereLight(0x9bc2ff,0x080808,1.15);scene.add(ambient);
+const key=new THREE.DirectionalLight(0xffdfa1,3.1);key.position.set(7,11,6);key.castShadow=true;key.shadow.mapSize.set(2048,2048);scene.add(key);
+const blue=new THREE.PointLight(0x3c82ff,30,30,2);blue.position.set(-5,5,-4);scene.add(blue);
+const goldLight=new THREE.PointLight(0xf0b856,28,24,2);goldLight.position.set(5,4,2);scene.add(goldLight);
+
+const mats={
+ floor:new THREE.MeshStandardMaterial({color:0x090e14,roughness:.7,metalness:.2}),
+ wall:new THREE.MeshStandardMaterial({color:0x0d141d,roughness:.55,metalness:.24}),
+ desk:new THREE.MeshStandardMaterial({color:0x151c25,roughness:.42,metalness:.5}),
+ gold:new THREE.MeshStandardMaterial({color:0xd3a44a,roughness:.24,metalness:.92,emissive:0x402a07,emissiveIntensity:.25}),
+ glass:new THREE.MeshPhysicalMaterial({color:0x34506a,transparent:true,opacity:.16,roughness:.05,transmission:.55,thickness:.3}),
+ screen:new THREE.MeshStandardMaterial({color:0x07131d,emissive:0x0f6b9c,emissiveIntensity:1.8,roughness:.2,metalness:.28}),
+ white:new THREE.MeshStandardMaterial({color:0xdde3e8,roughness:.3,metalness:.15}),
+ dark:new THREE.MeshStandardMaterial({color:0x101720,roughness:.45,metalness:.3})
+};
+const office=new THREE.Group();scene.add(office);
+function box(w,h,d,mat,x,y,z,cast=true){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=cast;m.receiveShadow=true;office.add(m);return m}
+function cyl(r,h,mat,x,y,z,segments=32){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,segments),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;office.add(m);return m}
+function roundedDesk(x,z,rot=0){const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rot;const top=new THREE.Mesh(new THREE.BoxGeometry(3.0,.16,1.12),mats.desk);top.position.y=.76;top.castShadow=true;g.add(top);for(const sx of [-1,1]){const leg=new THREE.Mesh(new THREE.BoxGeometry(.12,.72,.12),mats.gold);leg.position.set(sx*1.12,.38,0);g.add(leg)}const screen=new THREE.Mesh(new THREE.BoxGeometry(1.35,.78,.06),mats.screen);screen.position.set(0,1.35,-.34);screen.rotation.x=-.08;g.add(screen);const base=new THREE.Mesh(new THREE.BoxGeometry(.22,.08,.22),mats.gold);base.position.set(0,.93,-.22);g.add(base);office.add(g);return g}
+
+// architectural shell
+box(16,.45,10,mats.floor,0,-.23,0);box(16,4.9,.34,mats.wall,0,2.45,-4.85);box(.34,4.9,10,mats.wall,-7.83,2.45,0);
+for(let x=-6.5;x<=6.5;x+=2.6){box(2.25,3.2,.05,mats.glass,x,2.35,-4.63,false);box(.035,3.35,.12,mats.gold,x+1.26,2.35,-4.57,false)}
+for(let z=-3.7;z<=3.7;z+=2.45){box(.05,3.2,2.05,mats.glass,-7.62,2.35,z,false);box(.12,3.35,.035,mats.gold,-7.56,2.35,z+1.16,false)}
+// ceiling beams and light strips
+for(let x=-6.4;x<=6.4;x+=3.2){box(.1,.08,8.7,mats.dark,x,4.76,0,false)}
+for(let x=-5.7;x<=5.7;x+=3.8){const strip=box(.045,.025,7.4,mats.gold,x,4.69,0,false);strip.material=new THREE.MeshStandardMaterial({color:0xf5cf81,emissive:0xf5cf81,emissiveIntensity:2.3})}
+// back sign
+const sign=box(4.2,1.15,.12,mats.dark,0,3.05,-4.42,false);sign.material=new THREE.MeshStandardMaterial({color:0x080d13,roughness:.3,metalness:.65});
+// central command table
+cyl(2.0,.28,mats.desk,0,.55,0);cyl(1.72,.04,mats.gold,0,.72,0);const holo=new THREE.Mesh(new THREE.SphereGeometry(.64,40,28),new THREE.MeshStandardMaterial({color:0x132945,emissive:0x1f67b3,emissiveIntensity:1.25,metalness:.72,roughness:.16}));holo.position.set(0,1.48,0);holo.castShadow=true;office.add(holo);const holoRing=new THREE.Mesh(new THREE.TorusGeometry(1.06,.035,14,90),mats.gold);holoRing.rotation.x=Math.PI/2;holoRing.position.set(0,1.47,0);office.add(holoRing);
+// lounge and plants
+function plant(x,z){cyl(.18,.38,mats.dark,x,.18,z);const leaves=new THREE.Group();for(let i=0;i<6;i++){const leaf=new THREE.Mesh(new THREE.ConeGeometry(.12,.8,7),new THREE.MeshStandardMaterial({color:0x173c2b,roughness:.72}));leaf.position.set(Math.sin(i)*.14,.72,Math.cos(i)*.14);leaf.rotation.z=(i-2.5)*.13;leaves.add(leaf)}leaves.position.set(x,0,z);office.add(leaves)}plant(-6.5,-3.7);plant(6.5,-3.6);plant(6.5,3.6);
+box(2.3,.42,.9,mats.dark,-4.8,.22,3.55);box(.9,.38,.9,mats.dark,-6.05,.2,3.55);box(1.0,.28,.65,mats.desk,-4.8,.18,2.75);
+
+const depts=[
+ {name:'التطوير',x:-4.7,z:-2.25,color:0x4d8dff,rot:.04},
+ {name:'المحتوى',x:4.7,z:-2.25,color:0xa56dff,rot:-.04},
+ {name:'التحليل',x:-4.7,z:2.1,color:0x45d79a,rot:.02},
+ {name:'المشاريع',x:4.7,z:2.1,color:0xf0b856,rot:-.02}
+];
+const clickable=[];const deptObjects=[];
+for(const d of depts){const desk=roundedDesk(d.x,d.z,d.rot);desk.userData={type:'dept',name:d.name};clickable.push(desk);deptObjects.push(desk);const halo=new THREE.Mesh(new THREE.RingGeometry(1.55,1.62,64),new THREE.MeshBasicMaterial({color:d.color,transparent:true,opacity:.23,side:THREE.DoubleSide}));halo.rotation.x=-Math.PI/2;halo.position.set(d.x,.015,d.z);office.add(halo)}
+
+const employees=[
+ {name:'فهد',role:'AI Product Explorer',task:'استكشاف أفكار منتجات جديدة مبنية على مشاريع نواف.',status:'WORKING',progress:62,pos:[-4.7,.98,-1.7]},
+ {name:'نورة',role:'AI Operations',task:'مراجعة تقدم المشاريع وتحديد الاختناقات.',status:'WORKING',progress:47,pos:[4.7,.98,-1.7]},
+ {name:'سلمان',role:'AI Analyst',task:'تحليل تقارير الأداء وربطها بالمشاريع.',status:'WORKING',progress:78,pos:[-4.7,.98,2.65]},
+ {name:'ريم',role:'AI Project Coordinator',task:'جاهزة لاستقبال مهمة جديدة.',status:'READY',progress:0,pos:[4.7,.98,2.65]}
+];
+const avatars=[];const labels=[];
+function avatar(e,i){const g=new THREE.Group();g.position.set(...e.pos);const body=new THREE.Mesh(new THREE.CapsuleGeometry(.24,.38,8,18),mats.dark);body.castShadow=true;g.add(body);const chest=new THREE.Mesh(new THREE.BoxGeometry(.18,.1,.04),mats.gold);chest.position.set(0,.08,.24);g.add(chest);const head=new THREE.Mesh(new THREE.SphereGeometry(.27,24,18),mats.white);head.position.y=.48;head.castShadow=true;g.add(head);const visorMat=new THREE.MeshStandardMaterial({color:0x061019,emissive:e.status==='WORKING'?0x17a868:0xbf8a2a,emissiveIntensity:2.2,roughness:.2});const visor=new THREE.Mesh(new THREE.BoxGeometry(.31,.09,.09),visorMat);visor.position.set(0,.49,.23);g.add(visor);const ringMat=new THREE.MeshBasicMaterial({color:e.status==='WORKING'?0x45d79a:0xd3a44a,transparent:true,opacity:.78});const ring=new THREE.Mesh(new THREE.TorusGeometry(.4,.022,10,48),ringMat);ring.rotation.x=Math.PI/2;ring.position.y=-.4;g.add(ring);g.userData={type:'employee',index:i,visor,ring};office.add(g);avatars.push(g);clickable.push(g);const label=document.createElement('div');label.className='label '+(e.status==='WORKING'?'working':'ready');label.textContent=e.name+' • '+(e.status==='WORKING'?'يعمل':'جاهز');document.body.appendChild(label);labels.push(label)}employees.forEach(avatar);
+
+// atmospheric particles
+const pts=[];for(let i=0;i<220;i++)pts.push((Math.random()-.5)*18,Math.random()*6,(Math.random()-.5)*13);const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));const particles=new THREE.Points(pg,new THREE.PointsMaterial({color:0x6aa8ff,size:.018,transparent:true,opacity:.18}));scene.add(particles);
+
+const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();let selected=0;
+function toast(msg){const t=document.querySelector('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),1700)}
+function updatePanel(i){selected=i;const e=employees[i];document.querySelector('#empName').textContent=e.name;document.querySelector('#empRole').textContent=e.role;document.querySelector('#empTask').textContent=e.task;document.querySelector('#empStatus').textContent=e.status==='WORKING'?'يعمل الآن':'جاهز';document.querySelector('#empDot').style.background=e.status==='WORKING'?'#45d79a':'#d3a44a';document.querySelector('#empProgress').style.width=e.progress+'%'}updatePanel(0);
+function cameraFromOrbit(){camera.position.set(target.x+Math.sin(yaw)*Math.cos(pitch)*distance,target.y+Math.sin(pitch)*distance,target.z+Math.cos(yaw)*Math.cos(pitch)*distance);camera.lookAt(target)}cameraFromOrbit();
+renderer.domElement.addEventListener('pointerdown',e=>{drag=true;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)});
+renderer.domElement.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;yaw-=dx*.0055;pitch=Math.max(.18,Math.min(.72,pitch-dy*.0045));lastX=e.clientX;lastY=e.clientY;cameraFromOrbit()});
+renderer.domElement.addEventListener('pointerup',e=>{drag=false;mouse.x=(e.clientX/innerWidth)*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(clickable,true);if(!hits.length)return;let o=hits[0].object;while(o.parent&&!o.userData.type)o=o.parent;if(o.userData.type==='employee'){updatePanel(o.userData.index);toast('تم تحديد '+employees[o.userData.index].name)}else if(o.userData.type==='dept'){toast('قسم '+o.userData.name+' — جاهز للربط بالبيانات')}});
+renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();distance=Math.max(8,Math.min(26,distance+e.deltaY*.012));cameraFromOrbit()},{passive:false});
+
+document.querySelector('#focusBtn').onclick=()=>{const p=avatars[selected].position.clone();target.lerp(new THREE.Vector3(p.x,p.y+.18,p.z),.9);distance=8.5;cameraFromOrbit();toast('تم تركيز الكاميرا على '+employees[selected].name)};
+document.querySelector('#toggleBtn').onclick=()=>{const e=employees[selected];e.status=e.status==='WORKING'?'READY':'WORKING';e.progress=e.status==='WORKING'?Math.max(e.progress,18):0;const a=avatars[selected];a.userData.visor.material.emissive.setHex(e.status==='WORKING'?0x17a868:0xbf8a2a);a.userData.ring.material.color.setHex(e.status==='WORKING'?0x45d79a:0xd3a44a);labels[selected].className='label '+(e.status==='WORKING'?'working':'ready');labels[selected].textContent=e.name+' • '+(e.status==='WORKING'?'يعمل':'جاهز');document.querySelector('#workingCount').textContent=employees.filter(x=>x.status==='WORKING').length;updatePanel(selected);toast(e.status==='WORKING'?'بدأ العمل':'أصبح جاهزًا')};
+function setMode(mode){document.querySelector('#cinematic').classList.toggle('active',mode==='cinematic');document.querySelector('#overview').classList.toggle('active',mode==='overview');if(mode==='overview'){target.set(0,.8,0);yaw=-.68;pitch=.62;distance=20}else{target.set(0,1.25,0);yaw=-.72;pitch=.33;distance=17}cameraFromOrbit()}
+document.querySelector('#cinematic').onclick=()=>setMode('cinematic');document.querySelector('#overview').onclick=()=>setMode('overview');document.querySelector('#reset').onclick=()=>{target.set(0,1.25,0);yaw=-.72;pitch=.33;distance=17;cameraFromOrbit();toast('تمت إعادة المشهد')};
+
+const clock=new THREE.Clock();
+function animate(){const t=clock.getElapsedTime();holo.rotation.y=t*.42;holoRing.rotation.z=t*.24;particles.rotation.y=t*.015;avatars.forEach((a,i)=>{a.position.y=employees[i].pos[1]+Math.sin(t*1.75+i)*.035;a.userData.ring.rotation.z=t*.45*(i%2?1:-1)});mats.screen.emissiveIntensity=1.55+Math.sin(t*2.2)*.22;for(let i=0;i<avatars.length;i++){const v=avatars[i].position.clone();v.y+=1.15;v.project(camera);const x=(v.x*.5+.5)*innerWidth,y=(-v.y*.5+.5)*innerHeight;labels[i].style.left=x+'px';labels[i].style.top=y+'px';labels[i].style.opacity=v.z<1?'1':'0'}renderer.render(scene,camera);requestAnimationFrame(animate)}animate();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>
