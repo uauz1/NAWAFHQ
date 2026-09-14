@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#07090d" />
+  <title>تطبيقات نواف — NAWAF HQ</title>
+  <link rel="stylesheet" href="hq-v5.css" />
+  <link rel="stylesheet" href="hq-app-integrations.css" />
+  <style>
+    body{background:#07090d;color:#f4f6fb;min-height:100vh}.apps-page{max-width:1180px;margin:0 auto;padding:24px}.apps-page-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}.apps-page-top h1{margin:0 0 5px}.apps-page-top p{margin:0;color:#8792a5}.apps-back{display:inline-flex;align-items:center;min-height:42px;padding:0 14px;border:1px solid #ffffff16;border-radius:12px;color:#eef2f8;text-decoration:none;background:#0d1420}.apps-page .connected-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.apps-command{margin-top:18px}.apps-command textarea,.apps-command select{width:100%;background:#0b111b;border:1px solid #ffffff18;color:#fff;border-radius:11px;padding:10px;font:inherit}.apps-command-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.apps-command-grid label{display:flex;flex-direction:column;gap:6px;color:#a8b2c3;font-size:11px}.apps-command-grid .full{grid-column:1/-1}.apps-output{margin-top:14px;padding:12px;border:1px solid #ffffff12;border-radius:12px;background:#0b111b;color:#b8c2d0;font-size:12px;line-height:1.8}.apps-history{margin-top:18px}.apps-history .control-row{padding:12px 0}@media(max-width:760px){.apps-page{padding:14px}.apps-page-top{align-items:flex-start;flex-direction:column}.apps-page .connected-grid{grid-template-columns:1fr}.apps-command-grid{grid-template-columns:1fr}.apps-command-grid .full{grid-column:auto}}
+  </style>
+</head>
+<body>
+  <main class="apps-page">
+    <header class="apps-page-top"><div><h1>تطبيقات نواف</h1><p>مركز التحكم المباشر في مُعِين وقدّها والمهام المرتبطة بهما.</p></div><a class="apps-back" href="./">العودة إلى NAWAF HQ</a></header>
+    <section class="connected-grid" id="apps-grid"></section>
+    <section class="workspace card apps-command"><div class="workspace-head"><div><h2>توجيه موظف</h2><p class="connected-sub">حوّل طلبك مباشرة إلى مهمة محفوظة داخل NAWAF HQ.</p></div></div><form id="command-form" class="apps-command-grid"><label>التطبيق<select name="projectId" id="project-select"></select></label><label>الموظف<select name="employeeId" id="employee-select"></select></label><label class="full">وش تبغاه يسوي؟<textarea name="command" rows="4" required placeholder="مثال: راجع تطبيق مُعِين كامل، أصلح المشاكل، وبعدها جهز لي تقرير"></textarea></label><label>الحالة<select name="status"><option value="READY">جاهز</option><option value="WORKING">ابدأ العمل</option><option value="RESEARCHING">بحث ومراجعة</option><option value="REVIEWING">فحص وجودة</option></select></label><div style="display:flex;align-items:end"><button class="primary" style="width:100%" type="submit">إرسال المهمة</button></div></form><div class="apps-output" id="command-output">جاهز لاستقبال توجيهك.</div></section>
+    <section class="workspace card apps-history"><div class="workspace-head"><h2>آخر المهام المرتبطة بالتطبيقات</h2></div><div id="apps-history"></div></section>
+  </main>
+  <script src="hq-apps-page.js"></script>
+</body>
+</html>
