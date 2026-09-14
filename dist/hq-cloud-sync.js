@@ -3,7 +3,8 @@ const KEY='nawaf-hq-v5';let cloud=false,pushing=false,lastRemote='';
 function parse(v){try{return JSON.parse(v||'{}')||{}}catch{return {}}}
 async function pull(){
  try{const r=await fetch('/api/state',{cache:'no-store'});if(!r.ok)return false;const j=await r.json();if(!j.ok)return false;cloud=true;document.documentElement.dataset.cloud='1';
- if(j.state){const remote=JSON.stringify(j.state);lastRemote=remote;const local=localStorage.getItem(KEY)||'';if(remote!==local)localStorage.setItem(KEY,remote)}
+ if(j.state&&Object.keys(j.state).length){const remote=JSON.stringify(j.state);lastRemote=remote;const local=localStorage.getItem(KEY)||'';if(remote!==local)localStorage.setItem(KEY,remote)}
+ else {lastRemote='';setTimeout(push,50)}
  return true}catch{return false}}
 let timer;
 async function push(){
