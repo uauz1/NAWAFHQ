@@ -1,39 +1,24 @@
 (function(){
 'use strict';
 const KEY='nawaf-hq-v5';
-let running=false,lastCheck=0;
+let running=false,lastCheck=0,lastOpenedTaskId='';
 const $=s=>document.querySelector(s);
 function read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch{return {}}}
-function write(s){localStorage.setItem(KEY,JSON.stringify(s));window.dispatchEvent(new CustomEvent('nawaf:state-updated'))}
 function emp(s,id){return (s.employees||[]).find(e=>e.id===id)}
 async function cloudReady(){try{if(window.HQCloudReady)await window.HQCloudReady;return !!window.HQCloud}catch{return false}}
 async function pull(){if(await cloudReady()){try{return await window.HQCloud.pull()}catch{}}return false}
 async function flush(){if(await cloudReady()){try{return await window.HQCloud.push()}catch{}}return false}
 async function health(){try{const r=await fetch('/api/gemini',{cache:'no-store'});const j=await r.json();return !!(r.ok&&j.configured)}catch{return false}}
 function showNotice(text,type='ok'){let n=$('#agent-notice');if(!n){n=document.createElement('div');n.id='agent-notice';n.style.cssText='position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:10000;max-width:min(620px,90vw);padding:10px 14px;border-radius:12px;background:#0d1520;border:1px solid #ffffff1a;color:#eef3f8;font:600 12px system-ui;box-shadow:0 14px 40px #0008';document.body.appendChild(n)}n.textContent=text;n.style.borderColor=type==='wait'?'#ffb46355':'#67d69a55';clearTimeout(showNotice.t);showNotice.t=setTimeout(()=>n.remove(),4500)}
-async function invokeWorker(taskId=''){
- const r=await fetch('/api/worker',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(taskId?{taskId}:{}),cache:'no-store'});
- const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw new Error(j.error||'WORKER_ERROR');return j
-}
-async function runTask(taskId){
- if(running)return;running=true;renderBadge();
- try{
-  await pull();const s=read(),t=(s.tasks||[]).find(x=>x.id===taskId);if(!t){showNotice('المهمة غير موجودة.','wait');return}
-  if(!s.companyStarted){showNotice('ابدأ الشركة أولاً ثم شغّل الموظفين.','wait');return}
-  if(t.status!=='READY'){showNotice('هذه المهمة ليست في حالة جاهزة للتنفيذ الآن.','wait');return}
-  const ok=await health();if(!ok){showNotice('محرك AI غير متصل. تأكد من GEMINI_API_KEY في Vercel.','wait');return}
-  await flush();showNotice(`بدأ ${emp(s,t.employeeId)?.name||'الموظف'} العمل على: ${t.title}`,'ok');
-  await invokeWorker(taskId);await pull();renderBadge();setTimeout(()=>location.reload(),350)
- }catch(err){showNotice('تعذر تشغيل الموظف: '+String(err.message||err),'wait');await pull()}finally{running=false;renderBadge()}
-}
-async function runNext(){
- if(running)return;await pull();const s=read();const t=(s.tasks||[]).find(x=>x.status==='READY');if(!t){showNotice('ما فيه مهام جاهزة للتنفيذ الآن.','ok');return}return runTask(t.id)
-}
+async function invokeWorker(taskId=''){const r=await fetch('/api/worker',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(taskId?{taskId}:{}),cache:'no-store'});const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw new Error(j.error||'WORKER_ERROR');return j}
+async function runTask(taskId){if(running)return;running=true;renderBadge();try{await pull();const s=read(),t=(s.tasks||[]).find(x=>x.id===taskId);if(!t){showNotice('المهمة غير موجودة.','wait');return}if(!s.companyStarted){showNotice('ابدأ الشركة أولاً ثم شغّل الموظفين.','wait');return}if(t.status!=='READY'){showNotice('غيّر حالة المهمة إلى READY ثم شغّلها.','wait');return}const ok=await health();if(!ok){showNotice('محرك AI غير متصل. تأكد من GEMINI_API_KEY في Vercel.','wait');return}await flush();showNotice(`بدأ ${emp(s,t.employeeId)?.name||'الموظف'} العمل على: ${t.title}`,'ok');await invokeWorker(taskId);await pull();renderBadge();setTimeout(()=>location.reload(),350)}catch(err){showNotice('تعذر تشغيل الموظف: '+String(err.message||err),'wait');await pull()}finally{running=false;renderBadge()}}
+async function runNext(){if(running)return;await pull();const s=read();const t=(s.tasks||[]).find(x=>x.status==='READY');if(!t){showNotice('ما فيه مهام جاهزة للتنفيذ الآن.','ok');return}return runTask(t.id)}
 function renderBadge(){const a=$('.hero .actions');if(!a)return;let b=$('#agent-run-next');if(!b){b=document.createElement('button');b.id='agent-run-next';b.type='button';b.className='soft';b.onclick=runNext;a.prepend(b)}const s=read(),ready=(s.tasks||[]).filter(t=>t.status==='READY').length,working=(s.tasks||[]).filter(t=>['WORKING','RESEARCHING','REVIEWING'].includes(t.status)).length;b.textContent=running||working?`⚙ AI يعمل (${Math.max(working,1)})`:`⚡ شغّل الموظفين (${ready})`;b.disabled=running}
-function decorateTasks(){document.querySelectorAll('[data-task]').forEach(btn=>{const id=btn.dataset.task,row=btn.closest('.item');if(!row||row.querySelector('[data-agent-run]'))return;const s=read(),t=(s.tasks||[]).find(x=>x.id===id);if(!t)return;const r=document.createElement('button');r.type='button';r.className='soft';r.dataset.agentRun=id;r.textContent=t.status==='READY'?'تشغيل AI':'حالة المهمة';r.style.padding='7px 9px';r.onclick=e=>{e.preventDefault();e.stopPropagation();if(t.status==='READY')runTask(id);else showNotice('حالة المهمة: '+t.status,'ok')};row.appendChild(r)})}
+function decorateTasks(){document.querySelectorAll('[data-task]').forEach(btn=>{const id=btn.dataset.task,row=btn.closest('.item');if(!row||row.querySelector('[data-agent-run]'))return;const s=read(),t=(s.tasks||[]).find(x=>x.id===id);if(!t)return;const r=document.createElement('button');r.type='button';r.className='soft';r.dataset.agentRun=id;r.textContent=t.status==='READY'?'تشغيل AI':'تشغيل من جديد';r.style.padding='7px 9px';r.onclick=e=>{e.preventDefault();e.stopPropagation();if(t.status!=='READY'){const x=read(),tt=(x.tasks||[]).find(v=>v.id===id);if(tt){tt.status='READY';tt.progress=0;localStorage.setItem(KEY,JSON.stringify(x))}}runTask(id)};row.appendChild(r)})}
+function decorateTaskModal(){const d=$('#dialog');const f=d?.querySelector('form#f');if(!d||!f||!lastOpenedTaskId||d.querySelector('#save-run-task'))return;const h=d.querySelector('h2')?.textContent||'';if(!h.includes('تعديل المهمة'))return;const actions=f.querySelector('.modal-actions');if(!actions)return;const b=document.createElement('button');b.id='save-run-task';b.type='button';b.className='primary';b.textContent='▶ حفظ وتشغيل الآن';b.onclick=()=>{const status=f.querySelector('[name="status"]');if(status)status.value='READY';const id=lastOpenedTaskId;f.requestSubmit();setTimeout(()=>runTask(id),650)};actions.appendChild(b)}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-task]');if(t)lastOpenedTaskId=t.dataset.task||''},true);
+const mo=new MutationObserver(()=>decorateTaskModal());mo.observe(document.documentElement,{subtree:true,childList:true});
 async function heartbeat(){if(Date.now()-lastCheck<10000||running)return;lastCheck=Date.now();await pull();renderBadge()}
-function boot(){renderBadge();decorateTasks();heartbeat()}
-window.addEventListener('nawaf:state-updated',()=>{renderBadge();decorateTasks()});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(heartbeat,250)});
-setInterval(boot,2500);window.NawafAgents={runTask,runNext,health,pull};document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot):boot();
+function boot(){renderBadge();decorateTasks();decorateTaskModal();heartbeat()}
+window.addEventListener('nawaf:state-updated',()=>{renderBadge();decorateTasks()});document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(heartbeat,250)});setInterval(boot,2500);window.NawafAgents={runTask,runNext,health,pull};document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot):boot();
 })();
