@@ -1,0 +1,13 @@
+(function(){
+  const parseRepo=input=>{const m=String(input||"").trim().match(/github\.com\/([^/]+)\/([^/#?]+)/i);if(!m)throw new Error("أدخل رابط مستودع GitHub صحيحًا");return{owner:m[1],repo:m[2].replace(/\.git$/i,"")};};
+  async function request(url){const response=await fetch(url,{headers:{Accept:"application/vnd.github+json"}});if(!response.ok)throw new Error(response.status===403?"تعذر الوصول للمستودع أو انتهى حد GitHub المجاني":"تعذر قراءة المستودع: "+response.status);return response.json();}
+  async function inspectRepository(input){const {owner,repo}=parseRepo(input),base=`https://api.github.com/repos/${owner}/${repo}`,meta=await request(base),tree=await request(`${base}/git/trees/${encodeURIComponent(meta.default_branch)}?recursive=1`),files=tree.tree.filter(x=>x.type==="blob"),paths=files.map(x=>x.path),ext={};paths.forEach(p=>{const x=(p.split(".").pop()||"other").toLowerCase();ext[x]=(ext[x]||0)+1});let packageData=null;if(paths.includes("package.json")){try{packageData=await request(`${base}/contents/package.json`);packageData=JSON.parse(decodeURIComponent(escape(atob(packageData.content.replace(/\s/g,"")))))}catch(_){packageData=null;}}
+    const findings=[`المستودع يحتوي ${files.length} ملفًا على الفرع ${meta.default_branch}.`,`آخر تحديث موثق من GitHub: ${new Date(meta.updated_at).toLocaleString("ar-SA")}.`];
+    if(!paths.some(p=>/(^|\/)(test|tests|__tests__)(\/|$)|\.(spec|test)\./i.test(p)))findings.push("لم يظهر مجلد أو نمط اختبارات واضح في شجرة الملفات.");
+    if(!paths.some(p=>/^README(\.|$)/i.test(p)))findings.push("لا يوجد README ظاهر في جذر المستودع.");
+    if(packageData&&!packageData.scripts?.test)findings.push("package.json لا يحتوي أمر test.");
+    const recommendations=[];if(findings.some(x=>x.includes("اختبارات")))recommendations.push("إضافة اختبارات تشغيل وتفاعلات قبل النشر.");if(findings.some(x=>x.includes("README")))recommendations.push("توثيق التشغيل والبنية ونقاط التكامل.");if(!recommendations.length)recommendations.push("مراجعة الملفات الأعلى أثرًا وربط كل ملاحظة بسطر أو مخرج قابل للتحقق.");
+    return{sourceType:"github-public",repository:`${owner}/${repo}`,sourceUrl:meta.html_url,defaultBranch:meta.default_branch,fileCount:files.length,languages:Object.entries(ext).sort((a,b)=>b[1]-a[1]).slice(0,8),findings,recommendations,evidence:{hasReadme:paths.some(p=>/^README(\.|$)/i.test(p)),hasTests:paths.some(p=>/(^|\/)(test|tests|__tests__)(\/|$)|\.(spec|test)\./i.test(p)),hasPackageJson:paths.includes("package.json"),sampleFiles:paths.slice(0,30)},fetchedAt:new Date().toISOString()};
+  }
+  window.NawafAdapters={githubPublic:{id:"github-public",label:"GitHub العام",mode:"REAL_CONNECTED_ACTION",inspectRepository}};
+})();
