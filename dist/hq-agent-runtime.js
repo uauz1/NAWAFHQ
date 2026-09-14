@@ -26,7 +26,11 @@ async function runNext(){if(running)return;const s=read();const t=(s.tasks||[]).
 function showNotice(text,type='ok'){let n=$('#agent-notice');if(!n){n=document.createElement('div');n.id='agent-notice';n.style.cssText='position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:10000;max-width:min(620px,90vw);padding:10px 14px;border-radius:12px;background:#0d1520;border:1px solid #ffffff1a;color:#eef3f8;font:600 12px system-ui;box-shadow:0 14px 40px #0008';document.body.appendChild(n)}n.textContent=text;n.style.borderColor=type==='wait'?'#ffb46355':'#67d69a55';clearTimeout(showNotice.t);showNotice.t=setTimeout(()=>n.remove(),4000)}
 function renderBadge(){const a=$('.hero .actions');if(!a)return;let b=$('#agent-run-next');if(!b){b=document.createElement('button');b.id='agent-run-next';b.type='button';b.className='soft';b.onclick=runNext;a.prepend(b)}const s=read(),ready=(s.tasks||[]).filter(t=>t.status==='READY').length,working=(s.tasks||[]).filter(t=>['WORKING','RESEARCHING','REVIEWING'].includes(t.status)).length;b.textContent=working?`⚙ AI يعمل (${working})`:`⚡ شغّل الموظفين (${ready})`;b.disabled=running}
 function decorateTasks(){document.querySelectorAll('[data-task]').forEach(btn=>{const id=btn.dataset.task,row=btn.closest('.item');if(!row||row.querySelector('[data-agent-run]'))return;const s=read(),t=(s.tasks||[]).find(x=>x.id===id);if(!t)return;const r=document.createElement('button');r.type='button';r.className='soft';r.dataset.agentRun=id;r.textContent=t.status==='READY'?'تشغيل AI':'إعادة تشغيل';r.style.padding='7px 9px';r.onclick=e=>{e.preventDefault();e.stopPropagation();runTask(id)};row.appendChild(r)})}
-async function autoIdeas(){if(Date.now()-lastCheck<5000||running)return;lastCheck=Date.now();const s=read();if(!s.companyStarted)return;const t=(s.tasks||[]).find(x=>x.status==='READY'&&x.employeeId==='ideas');if(t){const ok=await health();if(ok)runTask(t.id)}}
+async function autoIdeas(){if(Date.now()-lastCheck<2500||running)return;lastCheck=Date.now();const s=read();if(!s.companyStarted)return;
+s.lastHeartbeatAt=new Date().toISOString();write(s);
+const t=(s.tasks||[]).find(x=>x.status==='READY');
+if(t){const ok=await health();if(ok)runTask(t.id)}}
 function boot(){renderBadge();decorateTasks();autoIdeas()}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoIdeas,250)});
 setInterval(boot,1800);window.NawafAgents={runTask,runNext,health};document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot):boot();
 })();
