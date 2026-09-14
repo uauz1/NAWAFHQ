@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#070b16" />
+<title>Nawaf HQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="app">
+<aside class="side">
+  <div class="logo"><div class="logo-mark">N</div><div><b>NAWAF HQ</b><small>AI COMPANY OS</small></div></div>
+  <nav id="nav">
+    <button class="active" data-view="الرئيسية">⌂ <span>الرئيسية</span></button>
+    <button data-view="موظفو AI">◉ <span>موظفو AI</span></button>
+    <button data-view="المشاريع">◇ <span>المشاريع</span></button>
+    <button data-view="التقارير">▤ <span>التقارير</span></button>
+    <button data-view="مختبر الأفكار">✦ <span>مختبر الأفكار</span></button>
+    <button data-view="التحليلات">⌁ <span>التحليلات</span></button>
+  </nav>
+  <div class="law"><b>القانون رقم 1</b><span>لا صرف بدون موافقة نواف</span></div>
+</aside>
+<main>
+<header><button id="menu">☰</button><div class="search">⌕ <input id="search" placeholder="ابحث في شركتك..." /></div><div class="me"><span class="bell">●</span><div class="avatar">ن</div><div><b>نواف</b><small>الرئيس التنفيذي</small></div></div></header>
+<section class="page">
+<div class="hero"><div><span class="online"><i></i> الشركة تعمل الآن</span><h1 id="greeting">صباح الخير يا نواف 👋</h1><p>فريقك يشتغل على مشاريعك. هذه أهم المستجدات.</p></div><div class="motto">أفكار أكبر من الحدود<br><b>تنفيذ أسرع من المتوقع.</b></div></div>
+<div class="kpis" id="kpis"></div>
+<div class="layout">
+<section class="panel office-panel">
+ <div class="ph"><div><h2>مكتب الشركة <span>● مباشر الآن</span></h2><p>اضغط على أي روبوت أو قسم لمتابعة العمل</p></div><em>7 أقسام نشطة</em></div>
+ <div class="office" id="office">
+   <div class="floor-lines"></div>
+   <button class="room r1" data-dept="إدارة المشاريع"><strong>إدارة المشاريع</strong><span>شاشتان نشطتان</span></button>
+   <button class="room r2" data-dept="التسويق والنمو"><strong>التسويق والنمو</strong><span>حملة قيد الإعداد</span></button>
+   <button class="room r3" data-dept="التقنية والتطوير"><strong>التقنية والتطوير</strong><span>بناء واختبار</span></button>
+   <button class="room r4" data-dept="البحث والابتكار"><strong>البحث والابتكار</strong><span>3 أفكار واعدة</span></button>
+   <button class="room r5" data-dept="التحليلات والجودة"><strong>التحليلات والجودة</strong><span>مراقبة الأداء</span></button>
+   <button class="hq" data-dept="مركز القيادة"><span class="core"></span><b>NAWAF HQ</b><small>COMMAND CENTER</small></button>
+   <div id="robots"></div>
+ </div>
+</section>
+<section class="panel decisions"><div class="ph"><div><h2>قرارات بانتظارك</h2><p>تحتاج اعتماد الرئيس التنفيذي</p></div><b id="decisionCount">2</b></div><div id="decisionList"></div></section>
+<section class="panel employees"><div class="ph"><div><h2>موظفو AI</h2><p>الفريق النشط الآن</p></div><button class="link" id="addEmployee">+ إضافة موظف</button></div><div class="employee-grid" id="employeeGrid"></div></section>
+<section class="panel activity"><div class="ph"><div><h2>النشاط المباشر</h2><p>ماذا يحدث داخل الشركة؟</p></div></div><div id="activity"></div></section>
+<section class="panel projects"><div class="ph"><div><h2>المشاريع الحالية</h2><p>حالة التنفيذ</p></div></div><div id="projects"></div></section>
+<section class="panel reports"><div class="ph"><div><h2>التقارير الحية</h2><p>تابع إعداد التقارير لحظة بلحظة</p></div></div><div id="reports"></div></section>
+</div>
+</section>
+</main>
+</div>
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
