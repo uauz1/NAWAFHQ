@@ -1,4 +1,4 @@
-const MODEL=process.env.GEMINI_MODEL||'gemini-2.5-flash';
+const MODEL=process.env.GEMINI_MODEL||'gemini-flash-latest';
 const sbUrl=()=>String(process.env.SUPABASE_URL||'').replace(/\/$/,'');
 const sbKey=()=>process.env.SUPABASE_SERVICE_ROLE_KEY||'';
 function send(res,status,body){res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');res.end(JSON.stringify(body))}
