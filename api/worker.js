@@ -1,4 +1,4 @@
-const MODELS=[process.env.GEMINI_MODEL,'gemini-2.5-flash-lite','gemini-2.5-flash'].filter((v,i,a)=>v&&a.indexOf(v)===i);
+const FALLBACK_MODELS=[process.env.GEMINI_MODEL,'gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-2.5-flash-lite','gemini-2.5-flash'].filter((v,i,a)=>v&&a.indexOf(v)===i);
 const sbUrl=()=>String(process.env.SUPABASE_URL||'').replace(/\/$/,'');
 const sbKey=()=>process.env.SUPABASE_SERVICE_ROLE_KEY||'';
 function send(res,status,body){res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');res.end(JSON.stringify(body))}
@@ -10,12 +10,23 @@ const knowledge=t=>/فكر|فكرة|افكار|أفكار|اقترح|استكش�
 const external=t=>/اصلح|أصلح|عدل|عدّل|نفذ|نفّذ|انشر|اربط|ارفع|حذف|احذف|github|api|مستودع|repo|موقع|تطبيق|كود|برمج/.test(String(t?.title||t?.details||'').toLowerCase());
 function activity(s,text,type='REAL'){s.activity=Array.isArray(s.activity)?s.activity:[];s.activity.unshift({id:'a'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),text,type,at:new Date().toISOString()});s.activity=s.activity.slice(0,120)}
 function employee(s,id){return (s.employees||[]).find(e=>e.id===id)}
+async function availableModels(){
+ try{
+  const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=100',{headers:{'x-goog-api-key':process.env.GEMINI_API_KEY}});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)return FALLBACK_MODELS;
+  const found=(d.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>String(m.name||'').replace(/^models\//,'')).filter(n=>/gemini/i.test(n)&&!/image|vision|live|tts|audio|embedding|computer|research/i.test(n));
+  found.sort((a,b)=>{const score=n=>(/flash-lite/.test(n)?0:/flash/.test(n)?1:/pro/.test(n)?3:2)+(/preview|exp|latest/.test(n)?2:0);return score(a)-score(b)});
+  return [...new Set([...found,...FALLBACK_MODELS])];
+ }catch{return FALLBACK_MODELS}
+}
 async function gemini(task,state){
  const e=employee(state,task.employeeId),p=(state.projects||[]).find(x=>x.id===task.projectId);
  const system='أنت موظف AI داخل NAWAF HQ. نفذ المهمة بجودة عالية. لا تدّعي تنفيذ شيء خارجي لم تنفذه. إذا كانت مهمة معرفية أنجزها بالكامل. إذا احتاجت أداة خارجية أرجع NEEDS_TOOL. لا تنشئ تكلفة أو التزام مالي. أرجع JSON فقط بهذه الحقول: status واحد من COMPLETE أو NEEDS_TOOL أو NEEDS_APPROVAL، summary، deliverable، evidence مصفوفة، nextActions مصفوفة، requiredTools مصفوفة، confidence.';
  const payload={systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts:[{text:JSON.stringify({task:{title:task.title,details:task.details||task.title},employee:e?{name:e.name,role:e.role}:null,project:p?{name:p.name,phase:p.phase}:null})}]}],generationConfig:{temperature:.35,maxOutputTokens:1800,responseMimeType:'application/json'}};
  let last='GEMINI_UNAVAILABLE',deadline=Date.now()+30000;
- for(const model of MODELS){
+ const models=await availableModels();
+ for(const model of models){
   for(let attempt=0;attempt<2&&Date.now()<deadline;attempt++){
    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),Math.max(1000,Math.min(9000,deadline-Date.now())));
    try{
