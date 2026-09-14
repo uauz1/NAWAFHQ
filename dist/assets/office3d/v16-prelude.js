@@ -1,0 +1,1 @@
+(()=>{'use strict';if(!window.THREE)return;const T=window.THREE,orig=T.Object3D.prototype.add;T.Object3D.prototype.add=function(...objs){const out=orig.apply(this,objs);if(!window.__HQ16_SCENE&&this&&this.isScene)window.__HQ16_SCENE=this;return out};})();
