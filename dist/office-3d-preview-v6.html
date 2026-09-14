@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0f15">
+<title>NAWAF HQ — Living Office V6</title>
+<link rel="stylesheet" href="assets/office3d/v6.css?v=6.0.0">
+</head>
+<body>
+<main id="office3d-v6" class="v6-shell">
+<header class="v6-head">
+ <div><span class="live"><i></i> المقر حي</span><h1>NAWAF <em>HQ</em></h1><p>شركة AI حية — موظفون يتحركون ويتعاونون داخل المقر.</p></div>
+ <div class="camera-bar"><button data-camera="cinematic" class="active">سينمائي</button><button data-camera="overview">عام</button><button data-camera="top">علوي</button><button data-camera="nawaf">مكتب نواف</button><button data-camera="tour">جولة</button></div>
+</header>
+<section class="v6-layout">
+ <div class="v6-stage" id="v6-canvas">
+  <div class="stage-loading"><span></span><b>جاري تشغيل الشركة…</b></div>
+  <div class="stage-hint">اسحب للدوران • العجلة للتقريب • اضغط موظفًا أو غرفة أو شاشة</div>
+  <div class="legend"><span><i class="working"></i>يعمل</span><span><i class="ready"></i>جاهز</span><span><i class="meeting"></i>اجتماع</span><span><i class="waiting"></i>بانتظارك</span></div>
+ </div>
+ <aside class="info-panel" id="v6-info"><div class="info-empty"><span>◇</span><h2>مركز القيادة</h2><p>اختر موظفًا أو غرفة أو مكتب نواف.</p></div></aside>
+</section>
+<section class="office-feed"><div><span>الموظفون</span><b id="v6-employees">0</b></div><div><span>يعمل الآن</span><b id="v6-working">0</b></div><div><span>يتعاونون</span><b id="v6-moving">0</b></div><div><span>مكتمل</span><b id="v6-done">0</b></div><div class="activity"><span>آخر نشاط</span><b id="v6-activity">المقر جاهز للعمل</b></div></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js" crossorigin="anonymous"></script>
+<script src="assets/office3d/v6.js?v=6.0.0"></script>
+</body></html>
