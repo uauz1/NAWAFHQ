@@ -2,6 +2,7 @@
   "name": "nawaf-hq",
   "private": true,
   "scripts": {
+    "build": "node scripts/prepare-dist.mjs",
     "test": "node tests/smoke.mjs"
   }
 }
