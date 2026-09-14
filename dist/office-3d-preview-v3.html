@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>NAWAF HQ — Interactive 3D Office V3</title>
+<style>
+:root{--bg:#05080d;--panel:#0b1119e8;--line:#d3a44a44;--gold:#d3a44a;--gold2:#f3d58e;--text:#eef3f8;--muted:#8793a1;--ok:#45d79a;--warn:#efb85e;--blue:#5da8ff;--purple:#a56dff}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05080d;color:var(--text);font-family:Inter,Segoe UI,Tahoma,Arial,sans-serif}body{background:radial-gradient(circle at 50% 15%,#142238 0,#09111a 42%,#05080d 78%)}
+#app{position:relative;width:100%;height:100%}#scene{position:absolute;inset:0}.hud{position:absolute;inset:0;pointer-events:none;z-index:20}.glass{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.top{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.brand,.stats,.panel,.tray,.toolbar,.toast,.mini{background:#09111be8;border:1px solid #ffffff10;box-shadow:0 18px 60px #0008}
+.brand{pointer-events:auto;border-color:var(--line);border-radius:16px;padding:11px 14px}.brand b{color:var(--gold2);letter-spacing:.6px}.brand small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.stats{display:flex;gap:7px;background:transparent;border:0;box-shadow:none}.stat{background:#09111be8;border:1px solid #ffffff10;border-radius:13px;padding:9px 11px;min-width:92px}.stat strong{display:block;font-size:18px}.stat span{font-size:10px;color:var(--muted)}
+.toolbar{pointer-events:auto;position:absolute;left:50%;top:14px;transform:translateX(-50%);display:flex;gap:5px;border-radius:999px;padding:5px}.toolbar button{border-radius:999px;padding:7px 10px;font-size:10px}.toolbar .active{border-color:#d3a44a66;color:var(--gold2);background:#17212c}
+.panel{pointer-events:auto;position:absolute;right:18px;top:94px;width:330px;border-color:var(--line);border-radius:18px;padding:14px}.eyebrow{font-size:10px;color:var(--gold2);letter-spacing:.6px}.panel h3{margin:5px 0 2px;font-size:18px}.role{font-size:11px;color:#aab5c2}.status{display:inline-flex;align-items:center;gap:7px;margin-top:9px;padding:6px 8px;border:1px solid #ffffff0d;border-radius:10px;background:#111a25;font-size:11px}.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 14px currentColor}.task{margin-top:10px;padding-top:9px;border-top:1px solid #ffffff0b;font-size:12px;line-height:1.65;color:#d5dee8}.progress{height:7px;background:#17202b;border-radius:999px;overflow:hidden;margin-top:9px}.progress i{display:block;height:100%;width:62%;background:linear-gradient(90deg,#95651f,#f0ce82);box-shadow:0 0 18px #d3a44a66}.actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:11px}button{border:1px solid #ffffff12;background:#111a27;color:#edf3f8;border-radius:10px;padding:8px 9px;cursor:pointer;font-weight:650}button:hover{border-color:#d3a44a66;background:#182331}.primary{background:linear-gradient(180deg,#d6aa52,#a97b2a);color:#0b0d10;border-color:#f2d083}
+.tray{pointer-events:auto;position:absolute;left:16px;top:94px;width:285px;border-radius:18px;padding:12px}.tabs{display:flex;gap:6px;margin-bottom:10px}.tabs button{flex:1;padding:7px 6px;font-size:10px}.tabs .active{border-color:#d3a44a66;color:var(--gold2)}.list{display:grid;gap:7px;max-height:340px;overflow:auto}.item{border:1px solid #ffffff0d;background:#0e1620;border-radius:11px;padding:9px;cursor:pointer}.item:hover{border-color:#d3a44a44}.item b{font-size:11px}.item small{display:block;color:var(--muted);font-size:9px;margin-top:3px;line-height:1.4}.pill{display:inline-block;margin-top:6px;font-size:9px;padding:4px 6px;border-radius:999px;border:1px solid #ffffff10;background:#121b26}.pill.ok{border-color:#45d79a55;color:#86e0ba}.pill.wait{border-color:#e7b65c55;color:#efcc8d}
+.mini{pointer-events:auto;position:absolute;left:16px;bottom:16px;border-radius:14px;padding:9px 11px;font-size:10px;color:var(--muted);line-height:1.55;max-width:360px}.toast{position:absolute;left:50%;top:78px;transform:translate(-50%,-8px);opacity:0;border-radius:10px;padding:8px 11px;font-size:11px;transition:.2s}.toast.show{opacity:1;transform:translate(-50%,0)}
+.label{position:absolute;transform:translate(-50%,-50%);pointer-events:none;background:#071019d9;border:1px solid #ffffff16;border-radius:9px;padding:5px 8px;font-size:10px;color:#e6edf4;white-space:nowrap;box-shadow:0 10px 30px #0008}.label.working{border-color:#45d79a55}.label.ready{border-color:#d3a44a55}.section-title{font-size:10px;color:#9eabb9;margin:4px 0 7px}.row{display:flex;gap:6px;flex-wrap:wrap}.quick{font-size:9px;padding:6px 8px}
+@media(max-width:1050px){.tray{display:none}.panel{width:285px}.stats .stat:nth-child(n+3){display:none}}
+@media(max-width:760px){.panel{width:260px;right:8px;top:84px}.stats .stat:nth-child(n+2){display:none}.brand small{display:none}.toolbar{top:auto;bottom:14px}.mini{display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="scene"></div>
+  <div class="hud">
+    <div class="top">
+      <div class="brand glass"><b>NAWAF HQ — INTERACTIVE 3D OFFICE</b><small>مقر حي مرتبط بالموظفين والمهام والمشاريع</small></div>
+      <div class="stats">
+        <div class="stat glass"><strong id="workingCount">0</strong><span>يعمل الآن</span></div>
+        <div class="stat glass"><strong id="readyCount">0</strong><span>جاهز</span></div>
+        <div class="stat glass"><strong id="taskCount">0</strong><span>مهام</span></div>
+      </div>
+    </div>
+
+    <div class="toolbar glass">
+      <button id="viewCinematic" class="active">سينمائي</button>
+      <button id="viewOverview">نظرة عامة</button>
+      <button id="viewTop">علوي</button>
+      <button id="tourBtn">جولة</button>
+    </div>
+
+    <aside class="tray glass">
+      <div class="tabs"><button class="active" data-tab="employees">الموظفون</button><button data-tab="tasks">المهام</button><button data-tab="activity">النشاط</button></div>
+      <div id="trayContent" class="list"></div>
+    </aside>
+
+    <aside class="panel glass">
+      <div class="eyebrow" id="panelEyebrow">AI EMPLOYEE</div>
+      <h3 id="empName">اختر موظفًا</h3>
+      <div class="role" id="empRole">—</div>
+      <div class="status"><span class="dot" id="empDot"></span><span id="empStatus">جاهز</span></div>
+      <div class="task" id="empTask">اضغط على أحد الموظفين أو اختره من القائمة.</div>
+      <div class="progress"><i id="empProgress"></i></div>
+      <div class="actions"><button class="primary" id="focusBtn">تركيز الكاميرا</button><button id="runBtn">تشغيل المهمة</button></div>
+      <div class="section-title">إجراءات سريعة</div>
+      <div class="row"><button class="quick" id="openTaskBtn">فتح المهمة</button><button class="quick" id="openProjectBtn">فتح المشروع</button><button class="quick" id="signalBtn">إرسال إشارة</button></div>
+    </aside>
+
+    <div class="mini glass">اسحب لتدوير المكتب • عجلة الماوس للتقريب • اضغط على الموظف أو القسم • كل التفاعلات ترسل أحداثًا يمكن ربطها بواجهة NAWAF HQ الحقيقية.</div>
+    <div class="toast glass" id="toast"></div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js';
+
+const STORAGE_KEY='nawaf-hq-v5';
+const DEMO={employees:[
+{id:'e1',name:'فهد',role:'AI Product Explorer',status:'WORKING',task:'استكشاف أفكار منتجات جديدة مبنية على مشاريع نواف.'},
+{id:'e2',name:'نورة',role:'AI Operations',status:'WORKING',task:'مراجعة تقدم المشاريع وتحديد الاختناقات.'},
+{id:'e3',name:'سلمان',role:'AI Analyst',status:'READY',task:'جاهز لاستقبال مهمة جديدة.'},
+{id:'e4',name:'ريم',role:'AI Project Coordinator',status:'READY',task:'متابعة مشاريع الشركة.'}],
+tasks:[{id:'t1',title:'اقترح 5 تحسينات عملية لمُعِين',status:'READY',progress:0,employeeId:'e1',projectId:'mueen'},{id:'t2',title:'حلل مشاكل قدّها',status:'WORKING',progress:35,employeeId:'e2',projectId:'qaddha'},{id:'t3',title:'اقترح تحسينات لناڤ',status:'READY',progress:0,employeeId:'e3',projectId:'nav'}],projects:[{id:'mueen',name:'مُعِين'},{id:'qaddha',name:'قدّها'},{id:'nav',name:'ناڤ'}],activity:[]};
+
+function readState(){try{const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');return s&&typeof s==='object'?s:DEMO}catch{return DEMO}}
+let state=readState(),selectedEmployeeId='',selectedTaskId='',activeTab='employees';
+
+const root=document.querySelector('#scene');
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;root.appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x05080d,.026);
+const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,100);let target=new THREE.Vector3(0,1.15,0),yaw=-.72,pitch=.34,distance=17,drag=false,lastX=0,lastY=0,tour=false,tourT=0;
+scene.add(new THREE.HemisphereLight(0x9bc2ff,0x080808,1.2));const key=new THREE.DirectionalLight(0xffdfa1,3.1);key.position.set(7,11,6);key.castShadow=true;scene.add(key);const blue=new THREE.PointLight(0x397df1,26,30,2);blue.position.set(-5,5,-4);scene.add(blue);const goldL=new THREE.PointLight(0xf0b856,24,24,2);goldL.position.set(5,4,2);scene.add(goldL);
+
+const mats={floor:new THREE.MeshStandardMaterial({color:0x090e14,roughness:.72,metalness:.2}),wall:new THREE.MeshStandardMaterial({color:0x0d141d,roughness:.55,metalness:.24}),desk:new THREE.MeshStandardMaterial({color:0x151c25,roughness:.42,metalness:.5}),gold:new THREE.MeshStandardMaterial({color:0xd3a44a,roughness:.24,metalness:.92,emissive:0x402a07,emissiveIntensity:.25}),glass:new THREE.MeshPhysicalMaterial({color:0x34506a,transparent:true,opacity:.16,roughness:.06,transmission:.55,thickness:.3}),screen:new THREE.MeshStandardMaterial({color:0x07131d,emissive:0x0f6b9c,emissiveIntensity:1.8,roughness:.2,metalness:.28}),white:new THREE.MeshStandardMaterial({color:0xdde3e8,roughness:.3,metalness:.15}),dark:new THREE.MeshStandardMaterial({color:0x101720,roughness:.45,metalness:.3})};
+const office=new THREE.Group();scene.add(office);const clickable=[];const empObjects=new Map();const labels=[];
+function box(w,h,d,mat,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;office.add(m);return m}
+function cyl(r,h,mat,x,y,z){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,32),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;office.add(m);return m}
+
+box(16,.45,10,mats.floor,0,-.23,0);box(16,4.9,.34,mats.wall,0,2.45,-4.85);box(.34,4.9,10,mats.wall,-7.83,2.45,0);
+for(let x=-6.5;x<=6.5;x+=2.6){box(2.25,3.2,.05,mats.glass,x,2.35,-4.63);box(.035,3.35,.12,mats.gold,x+1.26,2.35,-4.57)}
+for(let z=-3.7;z<=3.7;z+=2.45){box(.05,3.2,2.05,mats.glass,-7.62,2.35,z);box(.12,3.35,.035,mats.gold,-7.56,2.35,z+1.16)}
+for(let x=-5.7;x<=5.7;x+=3.8){const m=box(.045,.025,7.4,mats.gold,x,4.69,0);m.material=new THREE.MeshStandardMaterial({color:0xf5cf81,emissive:0xf5cf81,emissiveIntensity:2.2})}
+cyl(2.0,.28,mats.desk,0,.55,0);cyl(1.72,.04,mats.gold,0,.72,0);const holo=new THREE.Mesh(new THREE.SphereGeometry(.64,40,28),new THREE.MeshStandardMaterial({color:0x132945,emissive:0x1f67b3,emissiveIntensity:1.25,metalness:.72,roughness:.16}));holo.position.set(0,1.48,0);office.add(holo);const holoRing=new THREE.Mesh(new THREE.TorusGeometry(1.06,.035,14,90),mats.gold);holoRing.rotation.x=Math.PI/2;holoRing.position.set(0,1.47,0);office.add(holoRing);
+
+const deptDefs=[{name:'التطوير',x:-4.7,z:-2.25,color:0x4d8dff},{name:'المحتوى',x:4.7,z:-2.25,color:0xa56dff},{name:'التحليل',x:-4.7,z:2.1,color:0x45d79a},{name:'المشاريع',x:4.7,z:2.1,color:0xf0b856}];
+for(const d of deptDefs){const g=new THREE.Group();g.position.set(d.x,0,d.z);const top=new THREE.Mesh(new THREE.BoxGeometry(3,.16,1.12),mats.desk);top.position.y=.76;g.add(top);for(const sx of [-1,1]){const leg=new THREE.Mesh(new THREE.BoxGeometry(.12,.72,.12),mats.gold);leg.position.set(sx*1.12,.38,0);g.add(leg)}const scr=new THREE.Mesh(new THREE.BoxGeometry(1.35,.78,.06),mats.screen);scr.position.set(0,1.35,-.34);g.add(scr);g.userData={type:'dept',name:d.name};clickable.push(g);office.add(g);const ring=new THREE.Mesh(new THREE.RingGeometry(1.55,1.62,64),new THREE.MeshBasicMaterial({color:d.color,transparent:true,opacity:.24,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(d.x,.015,d.z);office.add(ring)}
+
+const empSlots=[[-4.7,1.0,-1.35],[4.7,1.0,-1.35],[-4.7,1.0,2.95],[4.7,1.0,2.95],[-1.9,1.0,3.3],[1.9,1.0,3.3]];
+function buildEmployees(){for(const [,o] of empObjects){office.remove(o)}empObjects.clear();labels.splice(0).forEach(l=>l.remove());const emps=state.employees||[];emps.slice(0,empSlots.length).forEach((e,i)=>{const p=empSlots[i],g=new THREE.Group();g.position.set(...p);const body=new THREE.Mesh(new THREE.CapsuleGeometry(.25,.48,8,16),mats.dark);g.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.28,24,18),mats.white);head.position.y=.57;g.add(head);const visorMat=new THREE.MeshStandardMaterial({color:0x07131d,emissive:(e.status==='WORKING'||e.status==='RESEARCHING')?0x1da96d:0xb9872f,emissiveIntensity:2});const visor=new THREE.Mesh(new THREE.BoxGeometry(.32,.10,.12),visorMat);visor.position.set(0,.58,.23);g.add(visor);const ring=new THREE.Mesh(new THREE.TorusGeometry(.42,.026,10,44),new THREE.MeshStandardMaterial({color:(e.status==='WORKING'||e.status==='RESEARCHING')?0x45d79a:0xd3a44a,emissive:(e.status==='WORKING'||e.status==='RESEARCHING')?0x45d79a:0xd3a44a,emissiveIntensity:1.5}));ring.rotation.x=Math.PI/2;ring.position.y=-.43;g.add(ring);g.userData={type:'emp',id:e.id};clickable.push(g);office.add(g);empObjects.set(e.id,g);const lab=document.createElement('div');lab.className='label '+((e.status==='WORKING'||e.status==='RESEARCHING')?'working':'ready');lab.textContent=e.name||'AI';document.body.appendChild(lab);labels.push(lab)})}
+buildEmployees();
+
+function taskForEmp(id){return (state.tasks||[]).find(t=>t.employeeId===id&&['WORKING','RESEARCHING','READY','WAITING_FOR_NAWAF'].includes(t.status))||(state.tasks||[]).find(t=>t.employeeId===id)}
+function projectName(id){return (state.projects||[]).find(p=>p.id===id)?.name||id||'—'}
+function emit(name,detail){window.dispatchEvent(new CustomEvent(name,{detail}))}
+function toast(msg){const t=document.querySelector('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),1800)}
+function syncStats(){const emps=state.employees||[],tasks=state.tasks||[];document.querySelector('#workingCount').textContent=emps.filter(e=>['WORKING','RESEARCHING','REVIEWING'].includes(e.status)).length;document.querySelector('#readyCount').textContent=emps.filter(e=>e.status==='READY').length;document.querySelector('#taskCount').textContent=tasks.length}
+function selectEmployee(id,focus=false){const e=(state.employees||[]).find(x=>x.id===id);if(!e)return;selectedEmployeeId=id;const t=taskForEmp(id);selectedTaskId=t?.id||'';document.querySelector('#panelEyebrow').textContent='AI EMPLOYEE';document.querySelector('#empName').textContent=e.name||'AI';document.querySelector('#empRole').textContent=e.role||'';document.querySelector('#empStatus').textContent=e.status||'READY';document.querySelector('#empDot').style.background=['WORKING','RESEARCHING','REVIEWING'].includes(e.status)?'#45d79a':'#d3a44a';document.querySelector('#empTask').textContent=t?.title||e.task||'لا توجد مهمة نشطة';document.querySelector('#empProgress').style.width=Math.max(0,Math.min(100,Number(t?.progress||0)))+'%';emit('nawaf3d:employee-selected',{employeeId:id,taskId:selectedTaskId});if(focus){const o=empObjects.get(id);if(o){target=o.position.clone();target.y=.8;distance=7.5}}renderTray()}
+function selectTask(id){const t=(state.tasks||[]).find(x=>x.id===id);if(!t)return;selectedTaskId=id;if(t.employeeId)selectEmployee(t.employeeId,false);document.querySelector('#panelEyebrow').textContent='AI TASK';document.querySelector('#empName').textContent=t.title;document.querySelector('#empRole').textContent='المشروع: '+projectName(t.projectId);document.querySelector('#empStatus').textContent=t.status||'READY';document.querySelector('#empTask').textContent=t.blockedReason||'مهمة قابلة للتنفيذ من المكتب الثلاثي الأبعاد.';document.querySelector('#empProgress').style.width=Math.max(0,Math.min(100,Number(t.progress||0)))+'%';emit('nawaf3d:task-selected',{taskId:id,employeeId:t.employeeId||''})}
+function renderTray(){const c=document.querySelector('#trayContent');c.innerHTML='';if(activeTab==='employees'){(state.employees||[]).forEach(e=>{const t=taskForEmp(e.id),d=document.createElement('div');d.className='item';d.innerHTML=`<b>${e.name||'AI'}</b><small>${e.role||''}</small><span class="pill ${['WORKING','RESEARCHING'].includes(e.status)?'ok':'wait'}">${e.status||'READY'}</span>`;d.onclick=()=>selectEmployee(e.id,true);c.appendChild(d)})}else if(activeTab==='tasks'){(state.tasks||[]).slice(0,12).forEach(t=>{const d=document.createElement('div');d.className='item';d.innerHTML=`<b>${t.title||'مهمة'}</b><small>${projectName(t.projectId)} • ${t.progress||0}%</small><span class="pill ${['WORKING','RESEARCHING','COMPLETED'].includes(t.status)?'ok':'wait'}">${t.status||'READY'}</span>`;d.onclick=()=>selectTask(t.id);c.appendChild(d)})}else{(state.activity||[]).slice(0,12).forEach(a=>{const d=document.createElement('div');d.className='item';d.innerHTML=`<b>${a.text||'نشاط'}</b><small>${a.at?new Date(a.at).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'}):''}</small>`;c.appendChild(d)});if(!c.children.length)c.innerHTML='<div class="item"><b>لا يوجد نشاط بعد</b><small>سيظهر نشاط الشركة الحقيقي هنا عند الدمج.</small></div>'}}
+
+document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{activeTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderTray()}));
+document.querySelector('#focusBtn').onclick=()=>{if(selectedEmployeeId)selectEmployee(selectedEmployeeId,true)};
+document.querySelector('#runBtn').onclick=async()=>{const id=selectedTaskId;if(!id)return toast('اختر مهمة أولاً');emit('nawaf3d:run-task',{taskId:id});if(window.NawafAgents?.runTask){toast('بدأ تشغيل المهمة');try{await window.NawafAgents.runTask(id)}catch(e){toast('تعذر التشغيل: '+(e.message||e))}}else toast('جاهز للربط مع NawafAgents.runTask عند الدمج')};
+document.querySelector('#openTaskBtn').onclick=()=>{if(!selectedTaskId)return toast('لا توجد مهمة محددة');emit('nawaf3d:open-task',{taskId:selectedTaskId});toast('تم إرسال حدث فتح المهمة')};
+document.querySelector('#openProjectBtn').onclick=()=>{const t=(state.tasks||[]).find(x=>x.id===selectedTaskId);if(!t?.projectId)return toast('لا يوجد مشروع مرتبط');emit('nawaf3d:open-project',{projectId:t.projectId});toast('تم إرسال حدث فتح المشروع')};
+document.querySelector('#signalBtn').onclick=()=>{if(!selectedEmployeeId)return toast('اختر موظفًا');emit('nawaf3d:signal-employee',{employeeId:selectedEmployeeId});toast('تم إرسال إشارة للموظف')};
+
+const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();renderer.domElement.addEventListener('pointerdown',e=>{drag=true;lastX=e.clientX;lastY=e.clientY});renderer.domElement.addEventListener('pointermove',e=>{if(!drag)return;yaw+=(e.clientX-lastX)*.006;pitch=Math.max(.18,Math.min(.75,pitch+(e.clientY-lastY)*.004));lastX=e.clientX;lastY=e.clientY});renderer.domElement.addEventListener('pointerup',e=>{drag=false;pointer.x=(e.clientX/innerWidth)*2-1;pointer.y=-(e.clientY/innerHeight)*2+1;raycaster.setFromCamera(pointer,camera);const hit=raycaster.intersectObjects(clickable,true)[0];if(!hit)return;let o=hit.object;while(o&&!o.userData?.type)o=o.parent;if(o?.userData?.type==='emp')selectEmployee(o.userData.id,true);if(o?.userData?.type==='dept'){emit('nawaf3d:department-selected',{department:o.userData.name});toast('قسم '+o.userData.name)}});renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();distance=Math.max(6,Math.min(25,distance+e.deltaY*.01))},{passive:false});
+
+function setView(name){tour=false;document.querySelectorAll('.toolbar button').forEach(b=>b.classList.remove('active'));if(name==='cinematic'){yaw=-.72;pitch=.34;distance=17;target.set(0,1.15,0);document.querySelector('#viewCinematic').classList.add('active')}if(name==='overview'){yaw=-.45;pitch=.58;distance=21;target.set(0,.7,0);document.querySelector('#viewOverview').classList.add('active')}if(name==='top'){yaw=-.1;pitch=1.18;distance=19;target.set(0,0,0);document.querySelector('#viewTop').classList.add('active')}}
+document.querySelector('#viewCinematic').onclick=()=>setView('cinematic');document.querySelector('#viewOverview').onclick=()=>setView('overview');document.querySelector('#viewTop').onclick=()=>setView('top');document.querySelector('#tourBtn').onclick=()=>{tour=!tour;document.querySelector('#tourBtn').classList.toggle('active',tour);toast(tour?'بدأت الجولة':'توقفت الجولة')};
+
+function refreshState(next){state=next&&typeof next==='object'?next:readState();syncStats();buildEmployees();renderTray();if(selectedEmployeeId)selectEmployee(selectedEmployeeId,false);else if(state.employees?.[0])selectEmployee(state.employees[0].id,false)}
+window.NAWAF3DOffice={setState:refreshState,getState:()=>state,selectEmployee,selectTask,focusEmployee:id=>selectEmployee(id,true),setView};window.addEventListener('nawaf:state-updated',()=>refreshState(readState()));window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY)refreshState(readState())});
+
+const clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);const t=clock.getElapsedTime();if(tour){tourT+=.003;yaw=-.72+Math.sin(tourT)*.65;pitch=.30+Math.sin(tourT*.7)*.08;distance=16.5+Math.sin(tourT*.5)*1.4}holo.rotation.y=t*.45;holoRing.rotation.z=t*.25;const cp=Math.cos(pitch);camera.position.set(target.x+distance*cp*Math.sin(yaw),target.y+distance*Math.sin(pitch),target.z+distance*cp*Math.cos(yaw));camera.lookAt(target);labels.forEach((lab,i)=>{const e=(state.employees||[])[i],o=e&&empObjects.get(e.id);if(!o)return;const p=o.position.clone();p.y+=1.0;p.project(camera);lab.style.left=((p.x*.5+.5)*innerWidth)+'px';lab.style.top=((-p.y*.5+.5)*innerHeight)+'px';lab.style.display=(p.z>1?'none':'block')});renderer.render(scene,camera)}
+animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});refreshState(state);
+</script>
+</body>
+</html>
