@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07090d"><title>NAWAF HQ — Office 3D V4</title>
+<link rel="stylesheet" href="assets/office3d/v4.css?v=4.0.0">
+</head>
+<body>
+<main class="v4-shell" id="office3d-v4">
+ <header class="v4-head">
+  <div><span class="live"><i></i> مقر الشركة مباشر</span><h1>NAWAF <em>HQ</em></h1><p>بيئة تشغيل ثلاثية الأبعاد مرتبطة بموظفيك ومهامك ومشاريعك.</p></div>
+  <div class="camera-bar" role="toolbar" aria-label="أوضاع الكاميرا">
+   <button data-camera="cinematic">سينمائي</button><button class="active" data-camera="overview">نظرة عامة</button><button data-camera="top">مخطط علوي</button><button data-camera="tour">جولة تلقائية</button>
+  </div>
+ </header>
+ <section class="v4-stage-wrap">
+  <div class="v4-stage" id="v4-canvas" aria-label="المقر التفاعلي ثلاثي الأبعاد">
+   <div class="stage-loading"><span></span><b>جاري تشغيل المقر…</b></div>
+   <div class="stage-hint">اسحب للدوران • حرّك العجلة للتقريب • اضغط على موظف أو غرفة</div>
+   <div class="stage-legend"><span><i class="ready"></i>جاهز</span><span><i class="working"></i>يعمل</span><span><i class="waiting"></i>بانتظارك</span><span><i class="error"></i>متعثر</span></div>
+  </div>
+  <aside class="info-panel" id="v4-info">
+   <div class="info-empty"><span>◇</span><h2>مركز القيادة</h2><p>اختر موظفًا أو غرفة أو شاشة مشروع من داخل المقر.</p></div>
+  </aside>
+ </section>
+ <section class="office-feed">
+  <div><span>الموظفون</span><b id="v4-employees">0</b></div><div><span>يعمل الآن</span><b id="v4-working">0</b></div><div><span>مهام جاهزة</span><b id="v4-ready">0</b></div><div><span>مكتمل</span><b id="v4-done">0</b></div>
+  <div class="activity-ticker"><span>آخر نشاط</span><b id="v4-activity">لا يوجد نشاط بعد</b></div>
+ </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js" crossorigin="anonymous"></script>
+<script src="assets/office3d/v4.js?v=4.0.0"></script>
+</body>
+</html>
