@@ -28,27 +28,23 @@ function refreshStats(){const busy=state.employees.filter(e=>!['READY','IDLE'].i
 function stat(v,l){return `<div class="stat"><b>${esc(v)}</b><span>${l}</span></div>`}
 function setView(v){view=v;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));const titles={dashboard:['لوحة القيادة','حالة الشركة الحقيقية الآن.'],office:['المقر التفاعلي','مكاتب الشركة والموظفون في مكان واحد.'],workforce:['القوى العاملة AI','إدارة الموظفين والحالات والتعليمات.'],projects:['المشاريع','كل مشروع ومرحلته وتقدمه.'],tasks:['المهام','إنشاء وإسناد وتتبع العمل.'],approvals:['موافقات CEO','الأشياء التي تحتاج قرارك فقط.'],reports:['التقارير','المخرجات الموثقة المحفوظة.'],settings:['الإعدادات','تحكم في واجهة وتشغيل Nawaf HQ.']};document.getElementById('page-title').textContent=titles[v][0];document.getElementById('page-sub').textContent=titles[v][1];refreshStats();const c=document.getElementById('content');if(v==='dashboard')c.innerHTML=dashboard();if(v==='office')c.innerHTML=officePage();if(v==='workforce')c.innerHTML=workforcePage();if(v==='projects')c.innerHTML=projectsPage();if(v==='tasks')c.innerHTML=tasksPage();if(v==='approvals')c.innerHTML=approvalsPage();if(v==='reports')c.innerHTML=reportsPage();if(v==='settings')c.innerHTML=settingsPage();bindContent();if(v==='dashboard'||v==='office')setTimeout(initOfficeUI,500)}
 function commandCenter(){
- const active=state.tasks.filter(t=>['WORKING','RESEARCHING','REVIEWING'].includes(t.status));
- const ready=state.tasks.filter(t=>t.status==='READY');
- const done=state.tasks.filter(t=>t.status==='COMPLETED');
- const lead=active[0]||ready[0]||done[0];
- const leadEmp=lead?state.employees.find(e=>e.id===lead.employeeId):null;
- const result=lead?.aiResult?.summary||lead?.aiResult?.deliverable||'';
- return `<section class="command-center">
-  <div class="command-top">
-   <div><span class="eyebrow"><i></i> مركز العمليات مباشر</span><h2>كل العمل في مكان واحد</h2><p>راقب التنفيذ والنتائج لحظة بلحظة بدون تحديث الصفحة.</p></div>
-   <div class="command-count"><b>${active.length}</b><span>يعمل الآن</span></div>
-  </div>
-  <div class="command-grid">
-   <div class="mission-panel">
-    <div class="panel-label">المهمة الحالية</div>
-    ${lead?`<div class="mission-head"><div class="agent-orb">${esc((leadEmp?.name||'AI').slice(0,1))}</div><div><h3>${esc(lead.title)}</h3><p>${esc(leadEmp?.name||'موظف AI')} • ${esc(projectName(lead.projectId))}</p></div><span class="pill ${active.includes(lead)?'work':''}">${statusMap[lead.status]||lead.status}</span></div><div class="mission-progress"><span style="width:${lead.progress||0}%"></span></div><div class="mission-foot"><span>${lead.progress||0}%</span><span>${lead.status==='COMPLETED'?'تم حفظ النتيجة':active.includes(lead)?'التنفيذ جارٍ الآن':'جاهزة للبدء'}</span></div>${result?`<div class="live-result"><b>آخر نتيجة</b><p>${esc(String(result).slice(0,260))}</p><button class="ghost" data-task="${lead.id}">فتح النتيجة كاملة</button></div>`:''}`:'<div class="center-empty">لا توجد مهمة بعد. أرسل توجيهًا للشركة للبدء.</div>'}
+ const active=state.tasks.filter(t=>['WORKING','RESEARCHING','REVIEWING'].includes(t.status)),ready=state.tasks.filter(t=>t.status==='READY'),done=state.tasks.filter(t=>t.status==='COMPLETED');
+ const lead=active[0]||ready[0]||done[0],leadEmp=lead?state.employees.find(e=>e.id===lead.employeeId):null,result=lead?.aiResult?.summary||lead?.aiResult?.deliverable||'';
+ return `<section class="command-center command-3d">
+  <div class="command-top compact"><div><span class="eyebrow"><i></i> NAWAF HQ • LIVE</span><h2>المقر التنفيذي</h2><p>اضغط على أي قسم لاستعراضه، واسحب المشهد للدوران.</p></div><div class="command-count"><b>${active.length}</b><span>يعمل الآن</span></div></div>
+  <div class="hq-3d-layout">
+   <div class="office hq-3d-stage">
+    <div class="office-overlay"></div>
+    <div class="scene-brand"><b>NAWAF HQ</b><span>AI OPERATIONS FLOOR</span></div>
+    <div class="room-nav">${rooms.slice(0,4).map((r,i)=>`<button type="button" data-room="${i}">${esc(r)}</button>`).join('')}</div>
+    <div class="office-toolbar"><button type="button" data-office="overview">عرض كامل</button><button type="button" data-office="task">＋ مهمة</button></div>
+    <div class="scene-status"><span><i></i> النظام متصل</span><b>${state.employees.length} موظفين</b></div>
    </div>
-   <div class="pipeline-panel"><div class="panel-label">مسار العمل</div>
-    <div class="pipeline-step"><b>${ready.length}</b><span>جاهزة</span></div>
-    <div class="pipeline-step active"><b>${active.length}</b><span>قيد التنفيذ</span></div>
-    <div class="pipeline-step done"><b>${done.length}</b><span>مكتملة</span></div>
-   </div>
+   <aside class="ops-rail">
+    <div class="mission-panel"><div class="panel-label">المهمة الحالية</div>
+    ${lead?`<div class="mission-head"><div class="agent-orb">${esc((leadEmp?.name||'AI').slice(0,1))}</div><div><h3>${esc(lead.title)}</h3><p>${esc(leadEmp?.name||'موظف AI')} • ${esc(projectName(lead.projectId))}</p></div><span class="pill ${active.includes(lead)?'work':''}">${statusMap[lead.status]||lead.status}</span></div><div class="mission-progress"><span style="width:${lead.progress||0}%"></span></div><div class="mission-foot"><span>${lead.progress||0}%</span><span>${lead.status==='COMPLETED'?'تم حفظ النتيجة':active.includes(lead)?'التنفيذ جارٍ':'جاهزة'}</span></div>${result?`<div class="live-result"><b>آخر نتيجة</b><p>${esc(String(result).slice(0,190))}</p><button class="ghost" data-task="${lead.id}">فتح النتيجة</button></div>`:''}`:'<div class="center-empty">لا توجد مهمة بعد.</div>'}</div>
+    <div class="pipeline-panel"><div class="panel-label">مسار العمل</div><div class="pipeline-step"><b>${ready.length}</b><span>جاهزة</span></div><div class="pipeline-step active"><b>${active.length}</b><span>تعمل</span></div><div class="pipeline-step done"><b>${done.length}</b><span>مكتملة</span></div></div>
+   </aside>
   </div>
   <div class="team-strip">${state.employees.slice(0,8).map(e=>`<button data-employee="${e.id}" class="team-chip"><span>${esc(e.name.slice(0,1))}</span><div><b>${esc(e.name)}</b><small>${statusMap[e.status]||e.status}</small></div><i class="${['WORKING','RESEARCHING','REVIEWING'].includes(e.status)?'busy':''}"></i></button>`).join('')}</div>
  </section>`}
