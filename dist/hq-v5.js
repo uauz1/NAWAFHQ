@@ -58,5 +58,6 @@ function searchGlobal(q){q=q.trim().toLowerCase();if(!q)return;if(state.employee
 function applySettings(){document.documentElement.classList.toggle('reduce-motion',!state.settings.motion);const rn=document.querySelector('.room-nav');if(rn)rn.style.display=state.settings.officeLabels?'grid':'none'}
 function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='nawaf-hq-backup.json';a.click();URL.revokeObjectURL(a.href);notify('تم تصدير نسخة احتياطية')}
 function resetAll(){if(!confirm('متأكد؟ سيتم حذف المهام والتقارير والنشاط المحلي.'))return;state=structuredClone(defaults);save();setView('dashboard');notify('تمت إعادة ضبط الشركة')}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+async function cloudBoot(){try{if(window.HQCloudReady)await window.HQCloudReady}catch{}boot()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',cloudBoot);else cloudBoot();
 })();
