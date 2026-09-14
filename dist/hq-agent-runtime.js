@@ -5,32 +5,35 @@ let running=false,lastCheck=0;
 const $=s=>document.querySelector(s);
 function read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch{return {}}}
 function write(s){localStorage.setItem(KEY,JSON.stringify(s));window.dispatchEvent(new CustomEvent('nawaf:state-updated'))}
-function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function addActivity(s,text,type='REAL'){s.activity=Array.isArray(s.activity)?s.activity:[];s.activity.unshift({id:'a'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),text,type,at:new Date().toISOString()});s.activity=s.activity.slice(0,100)}
 function emp(s,id){return (s.employees||[]).find(e=>e.id===id)}
-function proj(s,id){return (s.projects||[]).find(p=>p.id===id)}
-function isKnowledgeTask(t){return /فكر|فكرة|افكار|أفكار|اقترح|استكشف|حلل|تحليل|اكتب|صياغ|خطة|بحث|راجع المحتوى|تقرير|دراسة|مقارنة/.test(String(t.title||t.details||''))}
-function isExternalTask(t){return /اصلح|أصلح|عدل|عدّل|نفذ|نفّذ|انشر|اربط|ارفع|حذف|احذف|github|api|مستودع|repo|موقع|تطبيق|كود|برمج/.test(String(t.title||t.details||'').toLowerCase())}
-function statusText(x){return {READY:'جاهز',WORKING:'يعمل',RESEARCHING:'يبحث',REVIEWING:'يراجع',WAITING_FOR_NAWAF:'بانتظار نواف',COMPLETED:'مكتمل'}[x]||x}
+async function cloudReady(){try{if(window.HQCloudReady)await window.HQCloudReady;return !!window.HQCloud}catch{return false}}
+async function pull(){if(await cloudReady()){try{return await window.HQCloud.pull()}catch{}}return false}
+async function flush(){if(await cloudReady()){try{return await window.HQCloud.push()}catch{}}return false}
 async function health(){try{const r=await fetch('/api/gemini',{cache:'no-store'});const j=await r.json();return !!(r.ok&&j.configured)}catch{return false}}
-function systemPrompt(){return `أنت موظف AI داخل NAWAF HQ. نفذ المطلوب بتركيز وبأعلى جودة ممكنة. لا تدّعي تنفيذ شيء خارجي لم تنفذه فعليا. لا تختلق روابط أو commits أو نتائج اختبار. إذا كانت المهمة فكرية/بحثية/كتابية تستطيع إنجازها بالكامل وإرجاع النتيجة. إذا كانت المهمة تحتاج تعديل تطبيق أو GitHub أو خدمة خارجية ولا توجد أداة تنفيذ داخل هذا الطلب، أرجع NEEDS_TOOL بوضوح. لا تنشئ أي تكلفة أو التزام مالي. أرجع JSON فقط بهذه الحقول: status واحد من COMPLETE أو NEEDS_TOOL أو NEEDS_APPROVAL، summary نص عربي مختصر، deliverable نص مفصل، evidence مصفوفة نصوص حقيقية فقط، nextActions مصفوفة، requiredTools مصفوفة، confidence رقم من 0 إلى 100.`}
-async function ask(task,s){const e=emp(s,task.employeeId),p=proj(s,task.projectId);const context={task:{title:task.title,details:task.details||task.title},employee:e?{name:e.name,role:e.role,department:e.department}:null,project:p?{name:p.name,phase:p.phase,status:p.status}:null,knownProjects:(s.projects||[]).map(x=>({name:x.name,phase:x.phase,status:x.status})),companyPolicy:window.NawafWorkforce?.POLICY?.rules||[]};const r=await fetch('/api/gemini',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:systemPrompt(),messages:[{role:'user',text:JSON.stringify(context)}]})});const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||'AI_ERROR');return j.result||{}}
-function addReport(s,task,result){s.reports=Array.isArray(s.reports)?s.reports:[];s.reports.unshift({id:'r'+Date.now().toString(36),title:`تقرير: ${task.title}`,projectId:task.projectId||'',author:emp(s,task.employeeId)?.name||'AI',stage:'محفوظ',content:[result.summary||'',result.deliverable||'',Array.isArray(result.nextActions)&&result.nextActions.length?'الخطوات التالية:\n- '+result.nextActions.join('\n- '):''].filter(Boolean).join('\n\n'),createdAt:new Date().toISOString()})}
-function apply(taskId,result){const s=read(),t=(s.tasks||[]).find(x=>x.id===taskId);if(!t)return;const e=emp(s,t.employeeId);t.aiResult=result;t.lastRunAt=new Date().toISOString();t.evidence=Array.isArray(t.evidence)?t.evidence:[];for(const ev of (Array.isArray(result.evidence)?result.evidence:[])){if(ev&&typeof ev==='string')t.evidence.push({text:ev,at:new Date().toISOString(),type:'AI_EVIDENCE'})}
- if(result.status==='COMPLETE'&&isKnowledgeTask(t)&&!isExternalTask(t)){t.status='COMPLETED';t.progress=100;if(e){e.status='READY';e.task=''}addReport(s,t,result);addActivity(s,`${e?.name||'موظف AI'} أكمل المهمة: ${t.title}`,'REAL')}
- else if(result.status==='NEEDS_APPROVAL'){t.status='WAITING_FOR_NAWAF';t.progress=Math.max(25,Number(t.progress)||0);if(e)e.status='WAITING_FOR_NAWAF';s.approvals=Array.isArray(s.approvals)?s.approvals:[];s.approvals.unshift({id:'ap'+Date.now().toString(36),title:`موافقة مطلوبة: ${t.title}`,reason:result.summary||'تحتاج موافقة نواف',status:'WAITING',taskId:t.id,createdAt:new Date().toISOString()});addActivity(s,`${e?.name||'موظف AI'} يحتاج موافقة نواف في: ${t.title}`,'APPROVAL')}
- else {t.status='WAITING_FOR_NAWAF';t.progress=Math.max(20,Number(t.progress)||0);t.blockedReason=result.summary||'تحتاج أداة تنفيذ خارجية';t.requiredTools=Array.isArray(result.requiredTools)?result.requiredTools:[];if(e)e.status='WAITING_FOR_NAWAF';addReport(s,t,result);addActivity(s,`${e?.name||'موظف AI'} وصل لمرحلة تحتاج أداة/صلاحية في: ${t.title}`,'REAL')}
- write(s);renderBadge();setTimeout(()=>location.reload(),900)}
-async function runTask(taskId){if(running)return;const s=read(),t=(s.tasks||[]).find(x=>x.id===taskId);if(!t)return;running=true;try{const ok=await health();if(!ok){showNotice('محرك AI غير متصل. يحتاج GEMINI_API_KEY في Vercel لتبدأ المهام فعليًا.','wait');return}t.status=isKnowledgeTask(t)?'RESEARCHING':'WORKING';t.progress=Math.max(10,Number(t.progress)||0);const e=emp(s,t.employeeId);if(e){e.status=t.status;e.task=t.title}addActivity(s,`${e?.name||'موظف AI'} بدأ تنفيذ: ${t.title}`,'REAL');write(s);renderBadge();const result=await ask(t,s);apply(taskId,result)}catch(err){const x=read(),tt=(x.tasks||[]).find(v=>v.id===taskId);if(tt){tt.status='WAITING_FOR_NAWAF';tt.blockedReason='تعذر تشغيل محرك AI: '+String(err.message||err);const ee=emp(x,tt.employeeId);if(ee)ee.status='WAITING_FOR_NAWAF';addActivity(x,`تعذر تشغيل المهمة: ${tt.title}`,'REAL');write(x)}showNotice('تعذر تشغيل المهمة. افتح المهمة وشاهد السبب.','wait')}finally{running=false}}
-async function runNext(){if(running)return;const s=read();const t=(s.tasks||[]).find(x=>x.status==='READY');if(!t){showNotice('ما فيه مهام جاهزة للتنفيذ الآن.','ok');return}runTask(t.id)}
-function showNotice(text,type='ok'){let n=$('#agent-notice');if(!n){n=document.createElement('div');n.id='agent-notice';n.style.cssText='position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:10000;max-width:min(620px,90vw);padding:10px 14px;border-radius:12px;background:#0d1520;border:1px solid #ffffff1a;color:#eef3f8;font:600 12px system-ui;box-shadow:0 14px 40px #0008';document.body.appendChild(n)}n.textContent=text;n.style.borderColor=type==='wait'?'#ffb46355':'#67d69a55';clearTimeout(showNotice.t);showNotice.t=setTimeout(()=>n.remove(),4000)}
-function renderBadge(){const a=$('.hero .actions');if(!a)return;let b=$('#agent-run-next');if(!b){b=document.createElement('button');b.id='agent-run-next';b.type='button';b.className='soft';b.onclick=runNext;a.prepend(b)}const s=read(),ready=(s.tasks||[]).filter(t=>t.status==='READY').length,working=(s.tasks||[]).filter(t=>['WORKING','RESEARCHING','REVIEWING'].includes(t.status)).length;b.textContent=working?`⚙ AI يعمل (${working})`:`⚡ شغّل الموظفين (${ready})`;b.disabled=running}
-function decorateTasks(){document.querySelectorAll('[data-task]').forEach(btn=>{const id=btn.dataset.task,row=btn.closest('.item');if(!row||row.querySelector('[data-agent-run]'))return;const s=read(),t=(s.tasks||[]).find(x=>x.id===id);if(!t)return;const r=document.createElement('button');r.type='button';r.className='soft';r.dataset.agentRun=id;r.textContent=t.status==='READY'?'تشغيل AI':'إعادة تشغيل';r.style.padding='7px 9px';r.onclick=e=>{e.preventDefault();e.stopPropagation();runTask(id)};row.appendChild(r)})}
-async function autoIdeas(){if(Date.now()-lastCheck<2500||running)return;lastCheck=Date.now();const s=read();if(!s.companyStarted)return;
-s.lastHeartbeatAt=new Date().toISOString();write(s);
-const t=(s.tasks||[]).find(x=>x.status==='READY');
-if(t){const ok=await health();if(ok)runTask(t.id)}}
-function boot(){renderBadge();decorateTasks();autoIdeas()}
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoIdeas,250)});
-setInterval(boot,1800);window.NawafAgents={runTask,runNext,health};document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot):boot();
+function showNotice(text,type='ok'){let n=$('#agent-notice');if(!n){n=document.createElement('div');n.id='agent-notice';n.style.cssText='position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:10000;max-width:min(620px,90vw);padding:10px 14px;border-radius:12px;background:#0d1520;border:1px solid #ffffff1a;color:#eef3f8;font:600 12px system-ui;box-shadow:0 14px 40px #0008';document.body.appendChild(n)}n.textContent=text;n.style.borderColor=type==='wait'?'#ffb46355':'#67d69a55';clearTimeout(showNotice.t);showNotice.t=setTimeout(()=>n.remove(),4500)}
+async function invokeWorker(taskId=''){
+ const r=await fetch('/api/worker',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(taskId?{taskId}:{}),cache:'no-store'});
+ const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw new Error(j.error||'WORKER_ERROR');return j
+}
+async function runTask(taskId){
+ if(running)return;running=true;renderBadge();
+ try{
+  await pull();const s=read(),t=(s.tasks||[]).find(x=>x.id===taskId);if(!t){showNotice('المهمة غير موجودة.','wait');return}
+  if(!s.companyStarted){showNotice('ابدأ الشركة أولاً ثم شغّل الموظفين.','wait');return}
+  if(t.status!=='READY'){showNotice('هذه المهمة ليست في حالة جاهزة للتنفيذ الآن.','wait');return}
+  const ok=await health();if(!ok){showNotice('محرك AI غير متصل. تأكد من GEMINI_API_KEY في Vercel.','wait');return}
+  await flush();showNotice(`بدأ ${emp(s,t.employeeId)?.name||'الموظف'} العمل على: ${t.title}`,'ok');
+  await invokeWorker(taskId);await pull();renderBadge();setTimeout(()=>location.reload(),350)
+ }catch(err){showNotice('تعذر تشغيل الموظف: '+String(err.message||err),'wait');await pull()}finally{running=false;renderBadge()}
+}
+async function runNext(){
+ if(running)return;await pull();const s=read();const t=(s.tasks||[]).find(x=>x.status==='READY');if(!t){showNotice('ما فيه مهام جاهزة للتنفيذ الآن.','ok');return}return runTask(t.id)
+}
+function renderBadge(){const a=$('.hero .actions');if(!a)return;let b=$('#agent-run-next');if(!b){b=document.createElement('button');b.id='agent-run-next';b.type='button';b.className='soft';b.onclick=runNext;a.prepend(b)}const s=read(),ready=(s.tasks||[]).filter(t=>t.status==='READY').length,working=(s.tasks||[]).filter(t=>['WORKING','RESEARCHING','REVIEWING'].includes(t.status)).length;b.textContent=running||working?`⚙ AI يعمل (${Math.max(working,1)})`:`⚡ شغّل الموظفين (${ready})`;b.disabled=running}
+function decorateTasks(){document.querySelectorAll('[data-task]').forEach(btn=>{const id=btn.dataset.task,row=btn.closest('.item');if(!row||row.querySelector('[data-agent-run]'))return;const s=read(),t=(s.tasks||[]).find(x=>x.id===id);if(!t)return;const r=document.createElement('button');r.type='button';r.className='soft';r.dataset.agentRun=id;r.textContent=t.status==='READY'?'تشغيل AI':'حالة المهمة';r.style.padding='7px 9px';r.onclick=e=>{e.preventDefault();e.stopPropagation();if(t.status==='READY')runTask(id);else showNotice('حالة المهمة: '+t.status,'ok')};row.appendChild(r)})}
+async function heartbeat(){if(Date.now()-lastCheck<10000||running)return;lastCheck=Date.now();await pull();renderBadge()}
+function boot(){renderBadge();decorateTasks();heartbeat()}
+window.addEventListener('nawaf:state-updated',()=>{renderBadge();decorateTasks()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(heartbeat,250)});
+setInterval(boot,2500);window.NawafAgents={runTask,runNext,health,pull};document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot):boot();
 })();
