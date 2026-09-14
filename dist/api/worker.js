@@ -14,10 +14,10 @@ async function gemini(task,state){
  const e=employee(state,task.employeeId),p=(state.projects||[]).find(x=>x.id===task.projectId);
  const system='أنت موظف AI داخل NAWAF HQ. نفذ المهمة بجودة عالية. لا تدّعي تنفيذ شيء خارجي لم تنفذه. إذا كانت مهمة معرفية أنجزها بالكامل. إذا احتاجت أداة خارجية أرجع NEEDS_TOOL. لا تنشئ تكلفة أو التزام مالي. أرجع JSON فقط بهذه الحقول: status واحد من COMPLETE أو NEEDS_TOOL أو NEEDS_APPROVAL، summary، deliverable، evidence مصفوفة، nextActions مصفوفة، requiredTools مصفوفة، confidence.';
  const payload={systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts:[{text:JSON.stringify({task:{title:task.title,details:task.details||task.title},employee:e?{name:e.name,role:e.role}:null,project:p?{name:p.name,phase:p.phase}:null})}]}],generationConfig:{temperature:.35,maxOutputTokens:1800,responseMimeType:'application/json'}};
- let last='GEMINI_UNAVAILABLE';
+ let last='GEMINI_UNAVAILABLE',deadline=Date.now()+30000;
  for(const model of MODELS){
-  for(let attempt=0;attempt<2;attempt++){
-   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),24000);
+  for(let attempt=0;attempt<2&&Date.now()<deadline;attempt++){
+   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),Math.max(1000,Math.min(9000,deadline-Date.now())));
    try{
     const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':process.env.GEMINI_API_KEY},body:JSON.stringify(payload),signal:controller.signal});
     const d=await r.json().catch(()=>({}));
