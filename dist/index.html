@@ -3,43 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#07090d" />
+  <meta name="theme-color" content="#080b10" />
   <meta name="description" content="NAWAF HQ — AI Company Operating System" />
   <title>NAWAF HQ — AI Company OS</title>
-  <link rel="stylesheet" href="hq-v5.css?v=20260915-bootfix" />
+  <link rel="stylesheet" href="hq-v5.css?v=20260914-3d2" />
   <link rel="stylesheet" href="hq-v6.css?v=20260915-command-first-1" />
+  <link rel="stylesheet" href="hq-shell-v7.css?v=20260915-stable-1" />
   <link rel="stylesheet" href="hq-executive-secretary.css?v=20260915-sec-1" />
 </head>
 <body>
   <a href="apps.html" aria-label="فتح تطبيقات نواف" style="position:fixed;z-index:9999;left:18px;bottom:18px;min-height:44px;display:flex;align-items:center;padding:0 14px;border:1px solid rgba(215,170,75,.28);border-radius:12px;background:#0d141d;color:#f0cf82;text-decoration:none;font:600 12px system-ui">▣ تطبيقاتي</a>
   <div id="app"></div>
-  <script>window.HQCloudReady=null;window.HQCloud={connected:()=>false,pull:async()=>false,push:async()=>false,flush:async()=>false};</script>
-  <script src="hq-v5.js?v=20260915-bootfix"></script>
-  <script src="hq-workforce-policy.js?v=20260914-3d2"></script>
-  <script src="hq-agent-runtime.js?v=20260914-3d2"></script>
-  <script>
-    (function(){
-      const KEY='nawaf-hq-v5';
-      function read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch{return {}}}
-      function write(s){localStorage.setItem(KEY,JSON.stringify(s))}
-      function ensureIdeaEmployee(s){s.employees=s.employees||[];if(!s.employees.some(e=>e.id==='ideas'))s.employees.push({id:'ideas',name:'فهد',role:'مستكشف الأفكار والفرص',department:'البحث',status:'READY',task:'',productivity:100})}
-      function addTask(s,projectId,title){s.tasks=s.tasks||[];s.tasks.unshift({id:'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),title,details:title,projectId,employeeId:'ideas',status:'READY',progress:0,createdAt:new Date().toISOString()})}
-      function startCompany(){const s=read();ensureIdeaEmployee(s);if(!s.companyStarted){s.companyStarted=true;s.companyStartedAt=new Date().toISOString();addTask(s,'mueen','اقترح 5 تحسينات عملية لمُعِين');addTask(s,'qaddha','اقترح 5 أفكار أو تحسينات قابلة للتنفيذ لقدّها');addTask(s,'nav','اقترح 5 قدرات جديدة لناڤ');addTask(s,'','استكشف 3 أفكار منتجات أو خدمات جديدة مبنية على مشاريع نواف');s.activity=s.activity||[];s.activity.unshift({id:'a'+Date.now().toString(36),text:'بدأت الشركة وتم تفعيل مستكشف الأفكار والفرص',type:'REAL',at:new Date().toISOString()});write(s);location.reload()}}
-      function boot(){const s=read();ensureIdeaEmployee(s);write(s);const a=document.querySelector('.hero .actions');if(a&&!document.getElementById('start-company')){const b=document.createElement('button');b.id='start-company';b.type='button';b.className='primary';b.textContent=s.companyStarted?'● الشركة تعمل':'▶ ابدأ الشركة';b.disabled=!!s.companyStarted;b.onclick=startCompany;a.prepend(b)}const c=document.getElementById('content');if(c&&document.getElementById('page-title')?.textContent==='لوحة القيادة'&&!document.getElementById('idea-lab')){const x=document.createElement('section');x.id='idea-lab';x.className='workspace card';x.style.marginBottom='16px';x.innerHTML='<div class="workspace-head"><div><h2>مختبر الأفكار</h2><p style="color:var(--muted);font-size:12px">فهد — مستكشف الأفكار والفرص. يقترح أفكارًا مبنية على مشاريعك وفرصًا جديدة.</p></div><button type="button" class="soft" id="new-idea">＋ فكرة جديدة</button></div>';c.prepend(x);document.getElementById('new-idea').onclick=function(){const q=read();ensureIdeaEmployee(q);addTask(q,'','استكشف فكرة جديدة مناسبة لأعمال نواف مع سبب واضح وخطة تطبيق أولية');write(q);window.NawafAgents?.runNext?.()}}}
-      setInterval(boot,3000);document.addEventListener('DOMContentLoaded',boot);
-    })();
-    document.addEventListener('click',function(e){
-      const p=e.target.closest('[data-project]');
-      if(!p)return;
-      const links={mueen:'https://mueen-islamic-app.vercel.app/',qaddha:'https://qaddha.vercel.app/'};
-      if(links[p.dataset.project]){e.preventDefault();e.stopImmediatePropagation();window.open(links[p.dataset.project],'_blank','noopener');}
-    },true);
-    setTimeout(function(){if(!document.getElementById('app')?.children.length){document.getElementById('app').innerHTML='<div style="min-height:100vh;background:#07090d;color:#fff;display:grid;place-items:center;font-family:system-ui"><div style="text-align:center"><b style="font-size:20px">NAWAF HQ</b><p style="color:#9aa6b2">تعذر تحميل الواجهة. حدّث الصفحة مرة واحدة.</p><button onclick="location.reload()" style="padding:10px 16px;border:0;border-radius:10px;background:#d8ae5d;color:#111;font-weight:700">إعادة تحميل</button></div></div>';document.body.style.background='#07090d'}},2500);
-  </script>
-  <script src="hq-live-ops.js?v=20260914-live-ops-1"></script>
-  <script src="hq-collaboration-engine.js?v=20260914-collab-1"></script>
-  <script src="hq-ceo-decision-center.js?v=20260914-ceo-1"></script>
-  <script src="hq-smart-command.js?v=20260914-smart-command-1"></script>
+  <script src="hq-agent-runtime.js?v=20260915-stable-1"></script>
+  <script src="hq-shell-v7.js?v=20260915-stable-1"></script>
   <script src="hq-v6-command-center.js?v=20260915-command-first-1"></script>
   <script src="hq-project-executor.js?v=20260915-real-projects-1"></script>
   <script src="hq-executive-secretary.js?v=20260915-sec-1"></script>
