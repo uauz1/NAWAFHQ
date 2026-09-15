@@ -24,7 +24,7 @@
       function addTask(s,projectId,title){s.tasks=s.tasks||[];s.tasks.unshift({id:'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),title,details:title,projectId,employeeId:'ideas',status:'READY',progress:0,createdAt:new Date().toISOString()})}
       function startCompany(){const s=read();ensureIdeaEmployee(s);if(!s.companyStarted){s.companyStarted=true;s.companyStartedAt=new Date().toISOString();addTask(s,'mueen','اقترح 5 تحسينات عملية لمُعِين');addTask(s,'qaddha','اقترح 5 أفكار أو تحسينات قابلة للتنفيذ لقدّها');addTask(s,'nav','اقترح 5 قدرات جديدة لناڤ');addTask(s,'','استكشف 3 أفكار منتجات أو خدمات جديدة مبنية على مشاريع نواف');s.activity=s.activity||[];s.activity.unshift({id:'a'+Date.now().toString(36),text:'بدأت الشركة وتم تفعيل مستكشف الأفكار والفرص',type:'REAL',at:new Date().toISOString()});write(s);alert('بدأت الشركة وتم إنشاء مهام أفكار مبدئية لفهد.');location.reload()}else alert('الشركة بدأت بالفعل.')}
       function boot(){const s=read();ensureIdeaEmployee(s);write(s);const a=document.querySelector('.hero .actions');if(a&&!document.getElementById('start-company')){const b=document.createElement('button');b.id='start-company';b.type='button';b.className='primary';b.textContent='▶ ابدأ الشركة';b.onclick=startCompany;a.prepend(b)}const c=document.getElementById('content');if(c&&document.getElementById('page-title')?.textContent==='لوحة القيادة'&&!document.getElementById('idea-lab')){const x=document.createElement('section');x.id='idea-lab';x.className='workspace card';x.style.marginBottom='16px';x.innerHTML='<div class="workspace-head"><div><h2>مختبر الأفكار</h2><p style="color:var(--muted);font-size:12px">فهد — مستكشف الأفكار والفرص. يقترح أفكارًا مبنية على مشاريعك وفرصًا جديدة.</p></div><button type="button" class="soft" id="new-idea">＋ فكرة جديدة</button></div>';c.prepend(x);document.getElementById('new-idea').onclick=function(){const q=read();ensureIdeaEmployee(q);addTask(q,'','استكشف فكرة جديدة مناسبة لأعمال نواف مع سبب واضح وخطة تطبيق أولية');write(q);location.reload()}}}
-      setInterval(boot,800);document.addEventListener('DOMContentLoaded',boot);
+      setInterval(boot,2500);document.addEventListener('DOMContentLoaded',boot);
     })();
     document.addEventListener('click',function(e){
       const p=e.target.closest('[data-project]');
@@ -33,8 +33,7 @@
       if(links[p.dataset.project]){e.preventDefault();e.stopImmediatePropagation();location.assign(links[p.dataset.project]);}
     },true);
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js" crossorigin="anonymous"></script>
-  <script src="hq-v5-office.js?v=20260914-v17-controls"></script>
+  <script src="hq-v5-office.js?v=20260915-v19-performance"></script>
   <script src="hq-office-dashboard-bridge.js?v=20260914-live-control-1"></script>
   <script src="hq-office-agent-link.js?v=20260914-real-execution-1"></script>
   <script src="hq-office-autopilot.js?v=20260914-autopilot-1"></script>
