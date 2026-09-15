@@ -35,5 +35,10 @@ for(const qualityFeature of ['/api/health','openPalette','v11-mobile-nav','unhan
 for(const opsFeature of ['openNotifications','openActivity','openRecovery','retryTask','v12-dock','استعادة المهام','منهج راكان'])if(!ops.includes(opsFeature)&&!opsCss.includes(opsFeature))throw new Error(`Missing V12 ops feature ${opsFeature}`);
 for(const ceoFeature of ['openCenter','approve','reject','reopen','ceoBrief','مركز قرارات نواف','موافقة وإكمال','رفض وإغلاق','v13-center'])if(!ceo.includes(ceoFeature)&&!ceoCss.includes(ceoFeature))throw new Error(`Missing V13 CEO feature ${ceoFeature}`);
 for(const dashFeature of ['stateStats','projectHealth','employeeLoad','priority','CEO OVERVIEW','أولوياتك الآن','صحة المشاريع','ضغط الموظفين','QUICK ACTIONS','v14-dashboard'])if(!dash.includes(dashFeature)&&!dashCss.includes(dashFeature))throw new Error(`Missing V14 dashboard feature ${dashFeature}`);
+if(!dash.includes('NawafHQV13?.openCenter?.()'))throw new Error('V14 decisions action is not wired to V13 openCenter');
+if(dash.includes('openDecisions'))throw new Error('Deprecated V14 decisions action remains');
+if(!dash.includes('NawafHQV12?.openActivity?.()'))throw new Error('V14 activity action is not wired to V12');
+if(!dash.includes('NawafFinance?.open?.()'))throw new Error('V14 finance action is not wired');
+if(!dash.includes('HQCloud?.pull?.()'))throw new Error('V14 sync action is not wired');
 if(!css.trim()||!iconsCss.trim()||!qualityCss.trim()||!opsCss.trim()||!ceoCss.trim()||!dashCss.trim())throw new Error('Production stylesheet empty');
-console.log('Nawaf HQ V14 executive dashboard + V13 CEO decisions + operations + quality + finance + cloud sync + permissions smoke checks passed');
+console.log('Nawaf HQ V14 dashboard contracts + V13 CEO decisions + operations + quality + finance + cloud sync + permissions smoke checks passed');
