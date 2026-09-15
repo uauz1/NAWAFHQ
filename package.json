@@ -5,7 +5,7 @@
   "scripts": {
     "build": "node scripts/prepare-dist.mjs",
     "test": "node tests/smoke.mjs",
-    "start": "node render-server.mjs"
+    "start": "node render-server-v2.mjs"
   },
   "dependencies": {
     "three": "0.159.0"
