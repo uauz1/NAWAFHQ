@@ -32,7 +32,8 @@ for(const binding of ["document.addEventListener('click'","closest('[data-view]'
 for(const employee of ['سارة','عمر','ليان','نورة'])if(!app.includes(employee))throw new Error(`Missing employee ${employee}`);
 for(const project of ['مُعِين','قدّها','ناڤ'])if(!app.includes(project))throw new Error(`Missing project ${project}`);
 for(const link of ['mueen-islamic-app.vercel.app','qaddha.vercel.app','github.com/uauz1/mueen-islamic-app','github.com/uauz1/game'])if(!app.includes(link)&&!apps.includes(link))throw new Error(`Missing project link ${link}`);
-for(const runtime of ['runTask','runNext','/api/worker','تشغيل فعلي','تنفيذ حقيقي'])if(!agent.includes(runtime))throw new Error(`Missing verified agent runtime ${runtime}`);
+for(const runtime of ['async function runTask','async function runNext','/api/worker','invokeWorker','window.NawafAgents'])if(!agent.includes(runtime))throw new Error(`Missing verified agent runtime ${runtime}`);
+if(agent.includes('if(!s.companyStarted)')||agent.includes('ابدأ الشركة أولاً ثم شغّل الموظفين'))throw new Error('Hidden company-start gate still blocks direct execution');
 for(const runtime of ['NawafProjectExecutor','runTask','legacy:false','NawafAgents'])if(!executor.includes(runtime))throw new Error(`Missing unified project executor compatibility ${runtime}`);
 for(const syncFeature of ['/api/state','baseUpdatedAt','r.status===409','mergeState','HQCloud'])if(!cloud.includes(syncFeature))throw new Error(`Missing cloud sync feature ${syncFeature}`);
 for(const serverFeature of ['loadCloudState','saveCloudState','backgroundTick','executeRealProjectTask','VERIFIED_EVIDENCE','backgroundWorker:true'])if(!server.includes(serverFeature))throw new Error(`Missing real server worker feature ${serverFeature}`);
