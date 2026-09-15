@@ -2,7 +2,7 @@
 const KEY='nawaf-hq-v5';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 function read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch{return {}}}
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]))}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function age(v){const t=Date.parse(v||'');if(!Number.isFinite(t))return '';const m=Math.max(1,Math.floor((Date.now()-t)/60000));if(m<60)return `منذ ${m} د`;const h=Math.floor(m/60);if(h<24)return `منذ ${h} س`;return `منذ ${Math.floor(h/24)} ي`}
 function isDashboard(){return $('[data-view="dashboard"]')?.classList.contains('active')!==false&&!!$('.v8-main')}
 function stateStats(s){const tasks=s.tasks||[],employees=s.employees||[],projects=s.projects||[];const active=tasks.filter(t=>['WORKING','RESEARCHING','REVIEWING'].includes(t.status));const waiting=tasks.filter(t=>t.status==='WAITING_FOR_NAWAF');const done=tasks.filter(t=>t.status==='COMPLETED');const blocked=tasks.filter(t=>t.blockedReason&&t.status!=='COMPLETED');const urgent=tasks.filter(t=>t.priority==='URGENT'&&t.status!=='COMPLETED');const busyEmployees=employees.filter(e=>['WORKING','RESEARCHING','REVIEWING'].includes(e.status));const completion=tasks.length?Math.round(done.length/tasks.length*100):0;return {tasks,employees,projects,active,waiting,done,blocked,urgent,busyEmployees,completion}}
