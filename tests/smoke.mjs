@@ -16,7 +16,7 @@ for(const employee of ['سارة','عمر','ليان','نورة'])if(!app.includ
 for(const project of ['مُعِين','قدّها','ناڤ'])if(!app.includes(project))throw new Error(`Missing project ${project}`);
 for(const link of ['mueen-islamic-app.vercel.app','qaddha.vercel.app','github.com/uauz1/mueen-islamic-app','github.com/uauz1/game'])if(!app.includes(link)&&!apps.includes(link))throw new Error(`Missing project link ${link}`);
 for(const runtime of ['runTask','runNext','/api/worker'])if(!agent.includes(runtime))throw new Error(`Missing runtime ${runtime}`);
-for(const runtime of ['/api/project-execute','NawafProjectExecutor','runTask'])if(!executor.includes(runtime))throw new Error(`Missing project executor ${runtime}`);
+for(const runtime of ['/api/project-execute','NawafProjectExecutor','runTask','permissionBlock','projectAccess','permissions'])if(!executor.includes(runtime))throw new Error(`Missing project executor ${runtime}`);
 for(const syncFeature of ['/api/state','STATE_CONFLICT','متزامن','mergeState','HQCloud'])if(!cloud.includes(syncFeature))throw new Error(`Missing cloud sync feature ${syncFeature}`);
 if(!css.trim())throw new Error('V8 stylesheet empty');
-console.log('Nawaf HQ V8 + Cloud Sync V2 smoke checks passed');
+console.log('Nawaf HQ V9 + Cloud Sync V2 + permissions smoke checks passed');
