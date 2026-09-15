@@ -4,7 +4,13 @@ on:
   push:
     branches: [main]
     paths:
-      - 'tests/e2e-live.mjs'
+      - 'dist/**'
+      - 'api/**'
+      - 'render-server-v2.mjs'
+      - 'project-executor.mjs'
+      - 'state-cloud.mjs'
+      - 'tests/**'
+      - 'package.json'
       - '.github/workflows/live-e2e.yml'
 permissions:
   contents: read
@@ -17,6 +23,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Run smoke checks
+        run: npm test
       - name: Install Playwright
         run: npm install --no-save playwright@1.55.0
       - name: Install Chromium
