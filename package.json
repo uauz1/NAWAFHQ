@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node tests/smoke.mjs && node scripts/prepare-dist.mjs",
-    "test": "node tests/smoke.mjs",
+    "check:server": "node --check render-server-v2.mjs && node --check project-executor.mjs && node --check state-cloud.mjs && node --check slack-notifier.mjs",
+    "build": "npm run check:server && node tests/smoke.mjs && node scripts/prepare-dist.mjs",
+    "test": "npm run check:server && node tests/smoke.mjs",
     "start": "node render-server-v2.mjs"
   },
   "dependencies": {
