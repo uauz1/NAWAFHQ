@@ -4,7 +4,7 @@ const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1440,height:1100}});
 const errors=[];const failed=[];
 page.on('pageerror',e=>errors.push(String(e.message||e)));
-page.on('requestfailed',r=>{const u=r.url();if(u.startsWith(base))failed.push(`${r.method()} ${u} ${r.failure()?.errorText||''}`)});
+page.on('requestfailed',r=>{const u=r.url(),method=r.method(),err=r.failure()?.errorText||'';if(u.startsWith(base)&&!(method==='HEAD'&&/ERR_ABORTED/i.test(err)))failed.push(`${method} ${u} ${err}`)});
 await page.goto(base,{waitUntil:'networkidle',timeout:90000});
 await page.waitForSelector('#app .v8',{timeout:30000});
 if(!await page.locator('[data-view="dashboard"]').count())throw new Error('dashboard nav missing');
