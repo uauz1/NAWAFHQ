@@ -47,6 +47,8 @@ function taskBadge(t){
   if(t?.status==='WORKING') return 'جاري التنفيذ';
   if(t?.status==='RESEARCHING') return 'بحث فعلي جاري';
   if(t?.status==='WAITING_FOR_NAWAF') return 'بانتظار قرارك';
+  if(t?.status==='BLOCKED_BY_TOOL') return 'متوقف • أداة ناقصة';
+  if(t?.status==='BLOCKED') return 'فشل التنفيذ';
   if(t?.status==='PAUSED') return isTransientResourceError(t)?'متوقف مؤقتًا • حد خدمة خارجية':'متوقف مؤقتًا';
   if(t?.status==='READY') return 'جاهز للتنفيذ';
   return t?.status||'—';
