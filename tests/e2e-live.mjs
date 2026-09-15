@@ -26,7 +26,7 @@ for(const id of projectIds){await page.locator(`[data-project="${id}"]`).first()
 
 // Reuse existing QA tasks when available so repeated deployments do not pollute live state.
 let marker=await page.evaluate(()=>{try{const ts=JSON.parse(localStorage.getItem('nawaf-hq-v5')||'{}').tasks||[];const q=ts.find(t=>String(t.details||'').includes('QA-AUTO-'));return String(q?.details||'').match(/QA-AUTO-\d+/)?.[0]||''}catch{return ''}});
-let qaTasksCreated=0;
+let qaTasksCreated=0;let expectedQaTasks=3;
 async function createTask(employeeId,text){
   await page.locator('[data-view="tasks"]').first().click();await page.waitForTimeout(150);
   await page.locator('[data-action="new-task"]').first().click();await page.waitForSelector('#v8-task-form',{timeout:5000});
@@ -34,8 +34,8 @@ async function createTask(employeeId,text){
   await page.locator('#v8-task-form select[name="projectId"]').selectOption('');
   await page.locator('#v8-task-form textarea[name="details"]').fill(text);
   await page.locator('#v8-task-form button[type="submit"]').click();await page.waitForTimeout(900);
-  const exists=await page.evaluate(markerText=>{try{return (JSON.parse(localStorage.getItem('nawaf-hq-v5')||'{}').tasks||[]).some(t=>String(t.details||'').includes(markerText))}catch{return false}},text);
-  if(!exists)throw new Error(`task was not created: ${text}`);qaTasksCreated++;
+  const exists=await page.evaluate(markerText=>{try{return (JSON.parse(localStorage.getItem('nawaf-hq-v5')||'{}').tasks||[]).some(t=>String(t.details||'').includes(markerText)&&t.title===t.details)}catch{return false}},text);
+  if(!exists)throw new Error(`task was not created with full instruction: ${text}`);qaTasksCreated++;
 }
 if(!marker){
   marker=`QA-AUTO-${Date.now()}`;
@@ -45,10 +45,21 @@ if(!marker){
     {employee:'noura',text:`${marker} — نفذي مراجعة جودة تشغيلية لواجهة NAWAF HQ وسجلي فقط المشاكل التي يمكن إثباتها.`}
   ];
   for(const q of qaTasks)await createTask(q.employee,q.text);
+  // Test the separate Quick Command path with >88 chars to catch instruction truncation regressions.
+  await page.locator('[data-view="dashboard"]').first().click();await page.waitForTimeout(350);
+  await page.locator('[data-v14-action="quick"]').first().click();await page.waitForSelector('#v9-quick-form',{timeout:5000});
+  const quickText=`${marker} — اختبار الأمر السريع بنص طويل للتأكد أن تعليمات المهمة كاملة لا تُقص نهائياً أثناء الإنشاء والمزامنة بين الأجهزة والخادم.`;
+  await page.locator('#v9-quick-form select[name="employeeId"]').selectOption('omar');
+  await page.locator('#v9-quick-form textarea[name="details"]').fill(quickText);
+  await page.locator('#v9-quick-form button[type="submit"]').click();await page.waitForTimeout(900);
+  const quickFull=await page.evaluate(txt=>{try{return (JSON.parse(localStorage.getItem('nawaf-hq-v5')||'{}').tasks||[]).some(t=>t.details===txt&&t.title===txt)}catch{return false}},quickText);
+  if(!quickFull)throw new Error('quick command truncated or failed to create full instruction');qaTasksCreated++;expectedQaTasks=4;
+}else{
+  expectedQaTasks=await page.evaluate(m=>{try{return (JSON.parse(localStorage.getItem('nawaf-hq-v5')||'{}').tasks||[]).filter(t=>String(t.details||'').includes(m)).length}catch{return 3}},marker);
 }
 
-// At least three QA tasks must exist and at least one must have actually executed.
-await page.waitForFunction(m=>{try{const q=(JSON.parse(localStorage.getItem('nawaf-hq-v5')||'{}').tasks||[]).filter(t=>String(t.details||'').includes(m));return q.length>=3&&q.some(t=>t.status&&t.status!=='READY')}catch{return false}},marker,{timeout:30000}).catch(()=>{});
+// At least the QA tasks must persist and one must move beyond READY or expose a truthful pause/block.
+await page.waitForFunction(({m,n})=>{try{const q=(JSON.parse(localStorage.getItem('nawaf-hq-v5')||'{}').tasks||[]).filter(t=>String(t.details||'').includes(m));return q.length>=n&&q.some(t=>t.status&&t.status!=='READY')}catch{return false}},{m:marker,n:expectedQaTasks},{timeout:30000}).catch(()=>{});
 
 // Truthful UI: REVIEWING tasks with evidence must never be shown as 0%.
 await page.locator('[data-view="tasks"]').first().click();await page.waitForTimeout(400);
@@ -65,10 +76,19 @@ if(await page.locator('[data-task]').count()){await page.locator('[data-task]').
 // Company command opens a real command form.
 await page.locator('[data-action="company-command"]').first().click();await page.waitForSelector('#v8-command-form',{timeout:5000});await page.locator('#v8-modal [data-close]').first().click();
 
-// Dashboard control centers and finance panel must open when available.
+// Dashboard control centers, secretary, quick command, ops panels and finance must open.
 await page.locator('[data-view="dashboard"]').first().click();await page.waitForTimeout(500);
+if(!await page.locator('#exec-secretary-toggle').count())throw new Error('executive secretary toggle missing');
+await page.locator('#exec-secretary-toggle').click();await page.waitForTimeout(150);if(!await page.locator('#exec-secretary.open').count())throw new Error('executive secretary did not open');await page.locator('#exec-secretary-close').click();
+await page.locator('[data-v14-action="quick"]').first().click();await page.waitForSelector('#v9-modal.show #v9-quick-form',{timeout:5000});await page.locator('#v9-modal [data-v9-close]').first().click();
 if(await page.locator('[data-v14-action="decisions"]').count()){await page.locator('[data-v14-action="decisions"]').first().click();await page.waitForTimeout(250);if(!await page.locator('.v13-center.show').count())throw new Error('CEO decisions center did not open');await page.locator('.v13-center [data-v13-close]').click()}
+if(await page.locator('[data-v12-activity]').count()){await page.locator('[data-v12-activity]').click();await page.waitForTimeout(150);if(!await page.locator('.v12-panel.show').count())throw new Error('activity panel did not open');await page.locator('.v12-panel [data-v12-close]').click()}
+if(await page.locator('[data-v12-notify]').count()){await page.locator('[data-v12-notify]').click();await page.waitForTimeout(150);if(!await page.locator('.v12-panel.show').count())throw new Error('notifications panel did not open');await page.locator('.v12-panel [data-v12-close]').click()}
+if(await page.locator('[data-v12-recovery]').count()){await page.locator('[data-v12-recovery]').click();await page.waitForTimeout(150);if(!await page.locator('.v12-panel.show').count())throw new Error('recovery panel did not open');await page.locator('.v12-panel [data-v12-close]').click()}
 if(await page.locator('[data-finance-open]').count()){await page.locator('[data-finance-open]').first().click();await page.waitForTimeout(250);if(!await page.locator('#finance-modal.show').count())throw new Error('finance modal did not open');await page.locator('#finance-modal [data-fin-close]').first().click()}
+
+// Apps center must be navigable and include the real projects.
+await page.locator('.mobile-apps-link').click();await page.waitForURL('**/apps.html',{timeout:10000});await page.waitForLoadState('networkidle');const appsText=await page.locator('body').innerText();if(!appsText.includes('مُعِين')||!appsText.includes('قدّها'))throw new Error('apps center missing linked projects');await open();
 
 // Server APIs must be healthy and cloud state must contain the QA tasks.
 const health=await page.evaluate(async()=>{const r=await fetch('/api/health',{cache:'no-store'});return {status:r.status,json:await r.json().catch(()=>null)}});
@@ -77,19 +97,20 @@ if(health.status!==200||!health.json?.ok)throw new Error(`health API failed: ${J
 if(state.status!==200||!state.json?.ok)throw new Error(`state API failed: ${JSON.stringify(state)}`);
 const cloudTasks=state.json?.state?.tasks||state.json?.data?.tasks||state.json?.tasks||[];
 const cloudCount=cloudTasks.filter(t=>String(t.details||'').includes(marker)).length;
-if(cloudCount<3)throw new Error(`cloud persistence failed: expected at least 3 QA tasks, found ${cloudCount}`);
+if(cloudCount<expectedQaTasks)throw new Error(`cloud persistence failed: expected at least ${expectedQaTasks} QA tasks, found ${cloudCount}`);
 
 // Reload must preserve the same live tasks.
 await page.reload({waitUntil:'networkidle',timeout:120000});await page.waitForSelector('#app .v8',{timeout:30000});await page.locator('[data-view="tasks"]').first().click();await page.waitForTimeout(300);
-const afterReload=await page.evaluate(m=>{try{return (JSON.parse(localStorage.getItem('nawaf-hq-v5')||'{}').tasks||[]).filter(t=>String(t.details||'').includes(m)).length}catch{return 0}},marker);
-if(afterReload<3)throw new Error(`tasks disappeared after reload: ${afterReload}`);
+const afterReload=await page.evaluate(({m,n})=>{try{return (JSON.parse(localStorage.getItem('nawaf-hq-v5')||'{}').tasks||[]).filter(t=>String(t.details||'').includes(m)).length}catch{return 0}},{m:marker,n:expectedQaTasks});
+if(afterReload<expectedQaTasks)throw new Error(`tasks disappeared after reload: ${afterReload}/${expectedQaTasks}`);
 
-// Mobile sanity: no major horizontal overflow.
+// Mobile sanity: no major horizontal overflow and navigation stays accessible.
 await page.setViewportSize({width:390,height:844});await page.reload({waitUntil:'networkidle',timeout:120000});await page.waitForSelector('#app .v8',{timeout:30000});
 const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
 if(overflow>16)throw new Error(`mobile horizontal overflow detected: ${overflow}px`);
+if(!await page.locator('[data-view="dashboard"]').count())throw new Error('mobile navigation unavailable');
 
 if(errors.length)throw new Error(`page errors: ${errors.join(' | ')}`);
 if(failed.length)throw new Error(`failed production requests: ${failed.join(' | ')}`);
-console.log(JSON.stringify({ok:true,url:base,marker,employees:employeeIds.length,projects:projectIds.length,qaTasksCreated,cloudQaTasks:cloudCount,health:health.status,state:state.status,mobileOverflow:overflow,truncatedTasks:truncated},null,2));
+console.log(JSON.stringify({ok:true,url:base,marker,employees:employeeIds.length,projects:projectIds.length,qaTasksCreated,cloudQaTasks:cloudCount,health:health.status,state:state.status,mobileOverflow:overflow,truncatedTasks:truncated,secretary:true,quickCommand:true,opsPanels:true,appsCenter:true},null,2));
 await browser.close();
