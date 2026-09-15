@@ -7,9 +7,10 @@
   <meta name="description" content="NAWAF HQ — AI Company Operating System" />
   <title>NAWAF HQ — AI Company OS</title>
   <link rel="stylesheet" href="hq-v5.css?v=20260914-3d2" />
+  <link rel="stylesheet" href="hq-v6.css?v=20260915-command-first-1" />
 </head>
 <body>
-  <a href="apps.html" aria-label="فتح تطبيقات نواف" style="position:fixed;z-index:9999;left:18px;bottom:18px;min-height:44px;display:flex;align-items:center;padding:0 14px;border:1px solid rgba(215,170,75,.36);border-radius:12px;background:#0b1320;color:#f0cf82;text-decoration:none;font:600 12px system-ui">▣ تطبيقاتي</a>
+  <a href="apps.html" aria-label="فتح تطبيقات نواف" style="position:fixed;z-index:9999;left:18px;bottom:18px;min-height:44px;display:flex;align-items:center;padding:0 14px;border:1px solid rgba(215,170,75,.28);border-radius:12px;background:#0d141d;color:#f0cf82;text-decoration:none;font:600 12px system-ui">▣ تطبيقاتي</a>
   <div id="app"></div>
   <script src="hq-cloud-sync.js?v=20260914-3d2"></script>
   <script src="hq-v5.js?v=20260914-3d2"></script>
@@ -22,9 +23,9 @@
       function write(s){localStorage.setItem(KEY,JSON.stringify(s))}
       function ensureIdeaEmployee(s){s.employees=s.employees||[];if(!s.employees.some(e=>e.id==='ideas'))s.employees.push({id:'ideas',name:'فهد',role:'مستكشف الأفكار والفرص',department:'البحث',status:'READY',task:'',productivity:100})}
       function addTask(s,projectId,title){s.tasks=s.tasks||[];s.tasks.unshift({id:'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),title,details:title,projectId,employeeId:'ideas',status:'READY',progress:0,createdAt:new Date().toISOString()})}
-      function startCompany(){const s=read();ensureIdeaEmployee(s);if(!s.companyStarted){s.companyStarted=true;s.companyStartedAt=new Date().toISOString();addTask(s,'mueen','اقترح 5 تحسينات عملية لمُعِين');addTask(s,'qaddha','اقترح 5 أفكار أو تحسينات قابلة للتنفيذ لقدّها');addTask(s,'nav','اقترح 5 قدرات جديدة لناڤ');addTask(s,'','استكشف 3 أفكار منتجات أو خدمات جديدة مبنية على مشاريع نواف');s.activity=s.activity||[];s.activity.unshift({id:'a'+Date.now().toString(36),text:'بدأت الشركة وتم تفعيل مستكشف الأفكار والفرص',type:'REAL',at:new Date().toISOString()});write(s);alert('بدأت الشركة وتم إنشاء مهام أفكار مبدئية لفهد.');location.reload()}else alert('الشركة بدأت بالفعل.')}
-      function boot(){const s=read();ensureIdeaEmployee(s);write(s);const a=document.querySelector('.hero .actions');if(a&&!document.getElementById('start-company')){const b=document.createElement('button');b.id='start-company';b.type='button';b.className='primary';b.textContent='▶ ابدأ الشركة';b.onclick=startCompany;a.prepend(b)}const c=document.getElementById('content');if(c&&document.getElementById('page-title')?.textContent==='لوحة القيادة'&&!document.getElementById('idea-lab')){const x=document.createElement('section');x.id='idea-lab';x.className='workspace card';x.style.marginBottom='16px';x.innerHTML='<div class="workspace-head"><div><h2>مختبر الأفكار</h2><p style="color:var(--muted);font-size:12px">فهد — مستكشف الأفكار والفرص. يقترح أفكارًا مبنية على مشاريعك وفرصًا جديدة.</p></div><button type="button" class="soft" id="new-idea">＋ فكرة جديدة</button></div>';c.prepend(x);document.getElementById('new-idea').onclick=function(){const q=read();ensureIdeaEmployee(q);addTask(q,'','استكشف فكرة جديدة مناسبة لأعمال نواف مع سبب واضح وخطة تطبيق أولية');write(q);location.reload()}}}
-      setInterval(boot,2500);document.addEventListener('DOMContentLoaded',boot);
+      function startCompany(){const s=read();ensureIdeaEmployee(s);if(!s.companyStarted){s.companyStarted=true;s.companyStartedAt=new Date().toISOString();addTask(s,'mueen','اقترح 5 تحسينات عملية لمُعِين');addTask(s,'qaddha','اقترح 5 أفكار أو تحسينات قابلة للتنفيذ لقدّها');addTask(s,'nav','اقترح 5 قدرات جديدة لناڤ');addTask(s,'','استكشف 3 أفكار منتجات أو خدمات جديدة مبنية على مشاريع نواف');s.activity=s.activity||[];s.activity.unshift({id:'a'+Date.now().toString(36),text:'بدأت الشركة وتم تفعيل مستكشف الأفكار والفرص',type:'REAL',at:new Date().toISOString()});write(s);location.reload()}}
+      function boot(){const s=read();ensureIdeaEmployee(s);write(s);const a=document.querySelector('.hero .actions');if(a&&!document.getElementById('start-company')){const b=document.createElement('button');b.id='start-company';b.type='button';b.className='primary';b.textContent=s.companyStarted?'● الشركة تعمل':'▶ ابدأ الشركة';b.disabled=!!s.companyStarted;b.onclick=startCompany;a.prepend(b)}const c=document.getElementById('content');if(c&&document.getElementById('page-title')?.textContent==='لوحة القيادة'&&!document.getElementById('idea-lab')){const x=document.createElement('section');x.id='idea-lab';x.className='workspace card';x.style.marginBottom='16px';x.innerHTML='<div class="workspace-head"><div><h2>مختبر الأفكار</h2><p style="color:var(--muted);font-size:12px">فهد — مستكشف الأفكار والفرص. يقترح أفكارًا مبنية على مشاريعك وفرصًا جديدة.</p></div><button type="button" class="soft" id="new-idea">＋ فكرة جديدة</button></div>';c.prepend(x);document.getElementById('new-idea').onclick=function(){const q=read();ensureIdeaEmployee(q);addTask(q,'','استكشف فكرة جديدة مناسبة لأعمال نواف مع سبب واضح وخطة تطبيق أولية');write(q);window.NawafAgents?.runNext?.()}}}
+      setInterval(boot,3000);document.addEventListener('DOMContentLoaded',boot);
     })();
     document.addEventListener('click',function(e){
       const p=e.target.closest('[data-project]');
@@ -33,13 +34,10 @@
       if(links[p.dataset.project]){e.preventDefault();e.stopImmediatePropagation();location.assign(links[p.dataset.project]);}
     },true);
   </script>
-  <script src="hq-v5-office.js?v=20260915-v19-performance"></script>
-  <script src="hq-office-dashboard-bridge.js?v=20260914-live-control-1"></script>
-  <script src="hq-office-agent-link.js?v=20260914-real-execution-1"></script>
-  <script src="hq-office-autopilot.js?v=20260914-autopilot-1"></script>
   <script src="hq-live-ops.js?v=20260914-live-ops-1"></script>
   <script src="hq-collaboration-engine.js?v=20260914-collab-1"></script>
   <script src="hq-ceo-decision-center.js?v=20260914-ceo-1"></script>
   <script src="hq-smart-command.js?v=20260914-smart-command-1"></script>
+  <script src="hq-v6-command-center.js?v=20260915-command-first-1"></script>
 </body>
 </html>
