@@ -1,0 +1,29 @@
+name: Live E2E
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/e2e-live.mjs'
+      - '.github/workflows/live-e2e.yml'
+permissions:
+  contents: read
+jobs:
+  live-browser-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright
+        run: npm install --no-save playwright@1.55.0
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Wait for Render deployment
+        run: sleep 45
+      - name: Run live browser test
+        env:
+          HQ_URL: https://nawaf-hq-main.onrender.com
+        run: node tests/e2e-live.mjs
