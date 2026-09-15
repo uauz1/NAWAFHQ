@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/prepare-dist.mjs",
-    "start": "node render-server.mjs",
-    "test": "node tests/smoke.mjs"
+    "test": "node tests/smoke.mjs",
+    "start": "node render-server.mjs"
+  },
+  "dependencies": {
+    "three": "0.160.1"
   }
 }
