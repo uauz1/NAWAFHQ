@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/prepare-dist.mjs",
+    "build": "node tests/smoke.mjs && node scripts/prepare-dist.mjs",
     "test": "node tests/smoke.mjs",
     "start": "node render-server-v2.mjs"
   },
