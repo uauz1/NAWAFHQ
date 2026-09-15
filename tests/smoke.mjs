@@ -37,7 +37,7 @@ for(const financeFeature of ['finance','المحلل المالي والاستث
 for(const qualityFeature of ['/api/health','openPalette','v11-mobile-nav','unhandledrejection','preventDoubleSubmit','بحث سريع','المحلل المالي'])if(!quality.includes(qualityFeature)&&!qualityCss.includes(qualityFeature))throw new Error(`Missing V11 quality feature ${qualityFeature}`);
 for(const opsFeature of ['openNotifications','openActivity','openRecovery','retryTask','v12-dock','استعادة المهام','منهج راكان'])if(!ops.includes(opsFeature)&&!opsCss.includes(opsFeature))throw new Error(`Missing V12 ops feature ${opsFeature}`);
 for(const ceoFeature of ['openCenter','approve','reject','reopen','ceoBrief','مركز قرارات نواف','موافقة وإكمال','رفض وإغلاق','v13-center'])if(!ceo.includes(ceoFeature)&&!ceoCss.includes(ceoFeature))throw new Error(`Missing V13 CEO feature ${ceoFeature}`);
-for(const dashFeature of ['stateStats','projectHealth','employeeLoad','priority','CEO OVERVIEW','أولوياتك الآن','صحة المشاريع','ضغط الموظفين','QUICK ACTIONS','v14-dashboard'])if(!dash.includes(dashFeature)&&!dashCss.includes(dashFeature))throw new Error(`Missing V14 dashboard feature ${dashFeature}`);
+for(const dashFeature of ['stateStats','projectHealth','employeeLoad','priority','أولوياتك الآن','حالة المشاريع','الفريق','CONNECTED TOOLS','الأدوات المربوطة','QUICK ACTIONS','v14-dashboard'])if(!dash.includes(dashFeature)&&!dashCss.includes(dashFeature))throw new Error(`Missing V14 dashboard feature ${dashFeature}`);
 for(const osFeature of ['managerRun','runCompanyGoal','qaSweep','researchCenter','meetingRoom','projectMemory','permissions','deployments','costCenter','morning','شغّل الشركة','Inbox القرارات','Morning Brief','مركز الجودة QA','غرفة اجتماعات AI','ذاكرة المشاريع'])if(!companyOs.includes(osFeature)&&!companyOsCss.includes(osFeature))throw new Error(`Missing V15 company OS feature ${osFeature}`);
 if(!dash.includes('NawafHQV13?.openCenter?.()'))throw new Error('V14 decisions action is not wired to V13 openCenter');
 if(dash.includes('openDecisions'))throw new Error('Deprecated V14 decisions action remains');
@@ -45,4 +45,4 @@ if(!dash.includes('NawafHQV12?.openActivity?.()'))throw new Error('V14 activity 
 if(!dash.includes('NawafFinance?.open?.()'))throw new Error('V14 finance action is not wired');
 if(!dash.includes('HQCloud?.pull?.()'))throw new Error('V14 sync action is not wired');
 if(!css.trim()||!iconsCss.trim()||!qualityCss.trim()||!opsCss.trim()||!ceoCss.trim()||!dashCss.trim()||!companyOsCss.trim())throw new Error('Production stylesheet empty');
-console.log('Nawaf HQ V15 company OS + V14 dashboard + V13 decisions + operations + quality + finance + cloud sync + interaction wiring smoke checks passed');
+console.log('Nawaf HQ V15 company OS + simplified V14 dashboard + V13 decisions + operations + quality + finance + cloud sync + interaction wiring smoke checks passed');
