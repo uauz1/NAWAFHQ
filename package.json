@@ -8,6 +8,6 @@
     "start": "node render-server.mjs"
   },
   "dependencies": {
-    "three": "0.160.1"
+    "three": "0.159.0"
   }
 }
