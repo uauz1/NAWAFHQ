@@ -1,8 +1,10 @@
 {
   "name": "nawaf-hq",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "node scripts/prepare-dist.mjs",
+    "start": "node render-server.mjs",
     "test": "node tests/smoke.mjs"
   }
 }
