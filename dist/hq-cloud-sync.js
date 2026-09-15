@@ -1,21 +1,24 @@
 (function(){'use strict';
-const KEY='nawaf-hq-v5';let cloud=false,pushing=false,lastRemote='';
-function parse(v){try{return JSON.parse(v||'{}')||{}}catch{return {}}}
-function emit(){window.dispatchEvent(new CustomEvent('nawaf:state-updated'))}
-async function pull(){
- try{const r=await fetch('/api/state',{cache:'no-store'});if(!r.ok)return false;const j=await r.json();if(!j.ok)return false;cloud=true;document.documentElement.dataset.cloud='1';
- if(j.state&&Object.keys(j.state).length){const remote=JSON.stringify(j.state);lastRemote=remote;const local=localStorage.getItem(KEY)||'';if(remote!==local){localStorage.setItem(KEY,remote);emit()}}
- else {lastRemote='';await push()}
- return true}catch{return false}}
-let timer;
-async function push(){
- if(!cloud||pushing)return false;pushing=true;
- try{const state=parse(localStorage.getItem(KEY));const body=JSON.stringify(state);if(body===lastRemote)return true;const r=await fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({state}),keepalive:true});if(!r.ok)return false;lastRemote=body;return true}catch{return false}finally{pushing=false}}
-function schedule(){clearTimeout(timer);timer=setTimeout(()=>{push()},250)}
+const KEY='nawaf-hq-v5';
+let cloud=false,pushing=false,pulling=false,dirty=false,lastRemote='',lastUpdatedAt=null,timer=null;
 const nativeSet=Storage.prototype.setItem;
-Storage.prototype.setItem=function(k,v){nativeSet.call(this,k,v);if(this===localStorage&&k===KEY)schedule()}
-window.HQCloudReady=(async()=>{await pull();window.HQCloud={connected:()=>cloud,pull,push,flush:push};return cloud})();
-setInterval(()=>{if(!document.hidden)pull()},10000);
+function parse(v){try{return JSON.parse(v||'{}')||{}}catch{return {}}}
+function stamp(o){if(!o||typeof o!=='object')return 0;for(const k of ['updatedAt','lastRunAt','createdAt','executionStartedAt']){const t=Date.parse(o[k]||'');if(Number.isFinite(t))return t}return 0}
+function mergeList(remote=[],local=[]){const m=new Map();for(const x of Array.isArray(remote)?remote:[])if(x&&x.id)m.set(x.id,x);for(const x of Array.isArray(local)?local:[])if(x&&x.id){const r=m.get(x.id);if(!r)m.set(x.id,x);else{const rs=stamp(r),ls=stamp(x);m.set(x.id,ls>=rs?{...r,...x}:{...x,...r})}}return [...m.values()]}
+function mergeState(remote={},local={}){const out={...remote,...local};for(const k of ['employees','projects','tasks','reports','activity','approvals'])out[k]=mergeList(remote[k],local[k]);out.settings={...(remote.settings||{}),...(local.settings||{})};return out}
+function emit(){window.dispatchEvent(new CustomEvent('nawaf:state-updated',{detail:{reason:'cloud-sync'}}))}
+function ensurePill(){let p=document.getElementById('hq-cloud-pill');if(p)return p;p=document.createElement('div');p.id='hq-cloud-pill';p.setAttribute('aria-live','polite');Object.assign(p.style,{position:'fixed',right:'14px',bottom:'14px',zIndex:'10000',padding:'8px 11px',borderRadius:'999px',font:'600 11px system-ui',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,.10)',background:'rgba(10,15,22,.86)',color:'#d9e1ea',boxShadow:'0 8px 30px rgba(0,0,0,.22)',transition:'opacity .2s ease'});document.body.appendChild(p);return p}
+function status(kind,text){const p=ensurePill();p.textContent=text;const map={ok:'#9fe7b2',busy:'#f0cf82',off:'#ff9d9d'};p.style.color=map[kind]||'#d9e1ea';document.documentElement.dataset.cloud=kind==='ok'?'1':'0'}
+async function getRemote(){const r=await fetch('/api/state',{cache:'no-store'});const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw new Error(j.error||'CLOUD_READ_FAILED');return j}
+async function pull(){if(pulling||pushing)return false;pulling=true;status('busy','↻ مزامنة');try{const j=await getRemote();cloud=true;const remoteState=j.state&&typeof j.state==='object'?j.state:null;const local=parse(localStorage.getItem(KEY));if(remoteState&&Object.keys(remoteState).length){const remoteText=JSON.stringify(remoteState);if(dirty&&lastUpdatedAt&&j.updatedAt!==lastUpdatedAt&&remoteText!==lastRemote){const merged=mergeState(remoteState,local);nativeSet.call(localStorage,KEY,JSON.stringify(merged));lastRemote=remoteText;lastUpdatedAt=j.updatedAt;dirty=true;emit();schedule(120)}else if(!dirty&&remoteText!==JSON.stringify(local)){nativeSet.call(localStorage,KEY,remoteText);lastRemote=remoteText;lastUpdatedAt=j.updatedAt;emit()}else{lastRemote=remoteText;lastUpdatedAt=j.updatedAt}}else if(!Object.keys(local).length){lastRemote='';lastUpdatedAt=j.updatedAt||null}else{dirty=true;schedule(80)}status('ok','✓ متزامن');return true}catch{cloud=false;status('off',navigator.onLine?'⚠ تعذر الحفظ':'● أوفلاين');return false}finally{pulling=false}}
+async function push(retry=true){if(pushing)return false;if(!navigator.onLine){status('off','● أوفلاين');return false}pushing=true;status('busy','↑ جاري الحفظ');try{const state=parse(localStorage.getItem(KEY));const body=JSON.stringify(state);if(body===lastRemote&&!dirty){status('ok','✓ متزامن');return true}const r=await fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({state,baseUpdatedAt:lastUpdatedAt}),keepalive:true});const j=await r.json().catch(()=>({}));if(r.status===409&&retry&&j.state){const merged=mergeState(j.state,state);nativeSet.call(localStorage,KEY,JSON.stringify(merged));lastUpdatedAt=j.updatedAt||null;lastRemote=JSON.stringify(j.state);dirty=true;emit();return await push(false)}if(!r.ok||!j.ok)throw new Error(j.error||'CLOUD_WRITE_FAILED');lastRemote=body;lastUpdatedAt=j.updatedAt||lastUpdatedAt;dirty=false;cloud=true;status('ok','✓ متزامن');return true}catch{cloud=false;status('off','⚠ غير متزامن');return false}finally{pushing=false}}
+function schedule(ms=350){clearTimeout(timer);timer=setTimeout(()=>push(),ms)}
+Storage.prototype.setItem=function(k,v){nativeSet.call(this,k,v);if(this===localStorage&&k===KEY){dirty=true;status('busy','• تغييرات غير محفوظة');schedule()}}
+window.HQCloudReady=(async()=>{await pull();window.HQCloud={connected:()=>cloud,pull,push,flush:()=>push(),status:()=>({cloud,dirty,lastUpdatedAt})};return cloud})();
+setInterval(()=>{if(!document.hidden)pull()},8000);
+window.addEventListener('online',()=>{pull();schedule(200)});
+window.addEventListener('offline',()=>status('off','● أوفلاين'));
+window.addEventListener('storage',e=>{if(e.key===KEY)emit()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull();else push()});
-window.addEventListener('pagehide',()=>{push()});
+window.addEventListener('pagehide',()=>push());
 })();
