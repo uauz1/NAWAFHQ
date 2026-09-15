@@ -25,5 +25,5 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-task]');if
 const mo=new MutationObserver(()=>decorateTaskModal());mo.observe(document.documentElement,{subtree:true,childList:true});
 async function heartbeat(){if(Date.now()-lastCheck<2000||running)return;lastCheck=Date.now();await pull();renderBadge();const s=read();(s.tasks||[]).filter(t=>['WORKING','RESEARCHING','REVIEWING','WAITING_FOR_NAWAF'].includes(t.status)).forEach(t=>syncOfficeForTask(t,s))}
 function boot(){renderBadge();decorateTasks();decorateTaskModal();heartbeat()}
-window.addEventListener('nawaf:state-updated',()=>{renderBadge();decorateTasks()});document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(heartbeat,250)});setInterval(boot,1000);window.NawafAgents={runTask,runNext,health,pull};document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot):boot();
+window.addEventListener('nawaf:state-updated',()=>{renderBadge();decorateTasks()});document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(heartbeat,250)});setInterval(()=>{if(!document.hidden)boot()},5000);window.NawafAgents={runTask,runNext,health,pull};document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot):boot();
 })();
