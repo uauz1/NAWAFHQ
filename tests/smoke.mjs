@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { Script } from "node:vm";
 const read = name => readFileSync(new URL(`../dist/${name}`, import.meta.url), "utf8");
+const readRoot = name => readFileSync(new URL(`../${name}`, import.meta.url), "utf8");
 const html=read('index.html');
 const app=read('hq-shell-v8.js');
 const css=read('hq-shell-v8.css');
@@ -21,6 +22,8 @@ const dash=read('hq-dashboard-v14.js');
 const dashCss=read('hq-dashboard-v14.css');
 const companyOs=read('hq-company-os-v15.js');
 const companyOsCss=read('hq-company-os-v15.css');
+const server=readRoot('render-server-v2.mjs');
+const stateCloud=readRoot('state-cloud.mjs');
 new Script(app);new Script(agent);new Script(executor);new Script(apps);new Script(cloud);new Script(icons);new Script(finance);new Script(quality);new Script(ops);new Script(ceo);new Script(dash);new Script(companyOs);
 for(const asset of ['hq-shell-v8.css','hq-shell-v8.js','hq-agent-runtime.js','hq-project-executor.js','hq-executive-secretary.js','hq-cloud-sync.js','hq-icons-v10.css','hq-icons-v10.js','hq-finance-v1.js','hq-quality-v11.css','hq-quality-v11.js','hq-ops-v12.css','hq-ops-v12.js','hq-ceo-v13.css','hq-ceo-v13.js','hq-dashboard-v14.css','hq-dashboard-v14.js','hq-company-os-v15.css','hq-company-os-v15.js'])if(!html.includes(asset))throw new Error(`Missing asset ${asset}`);
 for(const view of ['dashboard','workforce','projects','tasks','reports'])if(!app.includes(`'${view}'`)&&!app.includes(`\"${view}\"`))throw new Error(`Missing view ${view}`);
@@ -29,9 +32,12 @@ for(const binding of ["document.addEventListener('click'","closest('[data-view]'
 for(const employee of ['سارة','عمر','ليان','نورة'])if(!app.includes(employee))throw new Error(`Missing employee ${employee}`);
 for(const project of ['مُعِين','قدّها','ناڤ'])if(!app.includes(project))throw new Error(`Missing project ${project}`);
 for(const link of ['mueen-islamic-app.vercel.app','qaddha.vercel.app','github.com/uauz1/mueen-islamic-app','github.com/uauz1/game'])if(!app.includes(link)&&!apps.includes(link))throw new Error(`Missing project link ${link}`);
-for(const runtime of ['runTask','runNext','/api/worker'])if(!agent.includes(runtime))throw new Error(`Missing runtime ${runtime}`);
-for(const runtime of ['/api/project-execute','NawafProjectExecutor','runTask','permissionBlock','projectAccess','permissions'])if(!executor.includes(runtime))throw new Error(`Missing project executor ${runtime}`);
+for(const runtime of ['runTask','runNext','/api/worker','تشغيل فعلي','تنفيذ حقيقي'])if(!agent.includes(runtime))throw new Error(`Missing verified agent runtime ${runtime}`);
+for(const runtime of ['NawafProjectExecutor','runTask','legacy:false','NawafAgents'])if(!executor.includes(runtime))throw new Error(`Missing unified project executor compatibility ${runtime}`);
 for(const syncFeature of ['/api/state','baseUpdatedAt','r.status===409','mergeState','HQCloud'])if(!cloud.includes(syncFeature))throw new Error(`Missing cloud sync feature ${syncFeature}`);
+for(const serverFeature of ['loadCloudState','saveCloudState','backgroundTick','executeRealProjectTask','VERIFIED_EVIDENCE','backgroundWorker:true'])if(!server.includes(serverFeature))throw new Error(`Missing real server worker feature ${serverFeature}`);
+for(const cloudFeature of ['export async function loadCloudState','export async function saveCloudState','STATE_CONFLICT'])if(!stateCloud.includes(cloudFeature))throw new Error(`Missing server cloud state feature ${cloudFeature}`);
+if(server.includes('task.progress=Math.max(10')||server.includes('task.progress=Math.max(20')||agent.includes('t.progress=10')||executor.includes('progress=Math.max(12')||executor.includes('progress=Math.max(55'))throw new Error('Fake progress logic remains in worker runtime');
 for(const iconFeature of ['dashboard','workforce','projects','tasks','reports','userPlus','command','external','github','edit','bolt','sync','close','apps'])if(!icons.includes(`${iconFeature}:`)&&!icons.includes(`'${iconFeature}'`)&&!icons.includes(`\"${iconFeature}\"`))throw new Error(`Missing V10 icon ${iconFeature}`);
 for(const financeFeature of ['finance','المحلل المالي والاستثماري','تحليل سهم','تقييم مالي','مراجعة محفظة','لا تنفذ أي شراء أو بيع'])if(!finance.includes(financeFeature))throw new Error(`Missing finance feature ${financeFeature}`);
 for(const qualityFeature of ['/api/health','openPalette','v11-mobile-nav','unhandledrejection','preventDoubleSubmit','بحث سريع','المحلل المالي'])if(!quality.includes(qualityFeature)&&!qualityCss.includes(qualityFeature))throw new Error(`Missing V11 quality feature ${qualityFeature}`);
@@ -45,4 +51,4 @@ if(!dash.includes('NawafHQV12?.openActivity?.()'))throw new Error('V14 activity 
 if(!dash.includes('NawafFinance?.open?.()'))throw new Error('V14 finance action is not wired');
 if(!dash.includes('HQCloud?.pull?.()'))throw new Error('V14 sync action is not wired');
 if(!css.trim()||!iconsCss.trim()||!qualityCss.trim()||!opsCss.trim()||!ceoCss.trim()||!dashCss.trim()||!companyOsCss.trim())throw new Error('Production stylesheet empty');
-console.log('Nawaf HQ V15 company OS + simplified V14 dashboard + V13 decisions + operations + quality + finance + cloud sync + interaction wiring smoke checks passed');
+console.log('Nawaf HQ verified worker + background execution + simplified dashboard + decisions + operations + quality + finance + cloud sync checks passed');
