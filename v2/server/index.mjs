@@ -7,20 +7,33 @@ import { db, dbConfigured, snapshot } from './db.mjs';
 import { registry } from './tool-adapters.mjs';
 
 const PORT=Number(process.env.PORT||8787), ROOT=join(fileURLToPath(new URL('.',import.meta.url)),'../web');
-const accessToken=process.env.HQ_V2_ACCESS_TOKEN||''; const clients=new Set(); let workerBusy=false;
+const accessToken=process.env.HQ_V2_ACCESS_TOKEN||''; const clients=new Set(); let workerBusy=false; let lastWorkerTick=null;
+const runtimeUrl=(process.env.OPENHANDS_RUNTIME_URL||'https://nawaf-hq-crewai-runtime.onrender.com').replace(/\/$/,'');
 let healthCache={at:0,value:null};
 const json=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));};
 const body=async req=>{let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>1_000_000)throw new Error('BODY_TOO_LARGE');}return raw?JSON.parse(raw):{};};
 const authorized=req=>accessToken&&req.headers.authorization===`Bearer ${accessToken}`;
 const broadcast=(event,data)=>{const payload=`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;for(const res of clients)res.write(payload);};
 
+async function syncToolConnections() {
+  if(!dbConfigured())return;
+  for(const adapter of registry.list()){
+    const row={provider:adapter.provider,capabilities:adapter.capabilities,permissions:[],connection_state:adapter.connectionState,health_state:adapter.health,last_checked_at:new Date().toISOString(),metadata:{source:'runtime_registry',autonomous:true}};
+    const existing=await db.one('hq_v2_tool_connections',`id=eq.${encodeURIComponent(adapter.id)}`,'id');
+    if(existing)await db.update('hq_v2_tool_connections',`id=eq.${encodeURIComponent(adapter.id)}`,row,false);
+    else await db.insert('hq_v2_tool_connections',{id:adapter.id,...row},false);
+  }
+}
+
 async function health() {
   if(healthCache.value&&Date.now()-healthCache.at<60000)return healthCache.value;
-  const checks={supabase:{status:'Unavailable'},executionWorker:{status:workerBusy?'Healthy':'Healthy'},paperBroker:{status:'Healthy'},realtime:{status:'Healthy'},github:{status:'Degraded'},aiBackend:{status:process.env.GEMINI_API_KEY?'Healthy':'Unavailable'},marketData:{status:'Degraded'},render:{status:'Healthy'}};
+  const checks={supabase:{status:'Unavailable'},executionWorker:{status:'Healthy'},projectExecutor:{status:'Unavailable'},paperBroker:{status:'Healthy'},realtime:{status:'Healthy'},github:{status:'Degraded'},aiBackend:{status:process.env.GEMINI_API_KEY?'Healthy':'Unavailable'},marketData:{status:'Degraded'},render:{status:'Healthy'}};
   if(dbConfigured()){try{const account=await db.one('hq_v2_paper_accounts','id=eq.default','id');checks.supabase={status:'Healthy'};checks.paperBroker={status:account?'Healthy':'Unavailable'}}catch(error){checks.supabase={status:'Unavailable',detail:String(error.message)};checks.paperBroker={status:'Unavailable'}}}
+  checks.executionWorker={status:'Healthy',detail:workerBusy?'ينفذ الآن':lastWorkerTick?`آخر دورة ${lastWorkerTick}`:'بانتظار أول دورة'};
+  try{const r=await fetch(`${runtimeUrl}/health`,{signal:AbortSignal.timeout(20000)});const d=await r.json().catch(()=>({}));checks.projectExecutor={status:r.ok&&d?.ok?'Healthy':'Degraded',detail:r.ok?`OpenHands ${d?.openhands?.status||'reachable'}`:`HTTP ${r.status}`}}catch(error){checks.projectExecutor={status:'Unavailable',detail:String(error.message||error)}}
   try{const r=await fetch('https://api.github.com/repos/uauz1/NAWAFHQ',{headers:{'User-Agent':'NAWAF-HQ-V2'},signal:AbortSignal.timeout(5000)});checks.github={status:r.ok?'Healthy':'Degraded',detail:`HTTP ${r.status}`}}catch(error){checks.github={status:'Unavailable',detail:String(error.message)}}
   try{const r=await fetch('https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1d',{headers:{'User-Agent':'Mozilla/5.0 NAWAF-HQ-V2'},signal:AbortSignal.timeout(5000)});const d=await r.json();checks.marketData={status:r.ok&&d?.chart?.result?.[0]?.meta?.regularMarketPrice?'Healthy':'Degraded'}}catch(error){checks.marketData={status:'Unavailable',detail:String(error.message)}}
-  const value={ok:checks.supabase.status==='Healthy'&&checks.executionWorker.status==='Healthy'&&checks.github.status!=='Unavailable',service:'nawaf-hq-v2',version:'2.0.0',checks,timestamp:new Date().toISOString(),authConfigured:Boolean(accessToken)};
+  const value={ok:checks.supabase.status==='Healthy'&&checks.executionWorker.status==='Healthy'&&checks.projectExecutor.status!=='Unavailable'&&checks.github.status!=='Unavailable',service:'nawaf-hq-v2',version:'2.1.0',checks,timestamp:new Date().toISOString(),authConfigured:Boolean(accessToken)};
   healthCache={at:Date.now(),value};return value;
 }
 
@@ -29,6 +42,7 @@ async function api(req,res,url){
   if(url.pathname==='/api/v2/events'&&req.method==='GET'){res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache','Connection':'keep-alive'});res.write(`event: connected\ndata: {"ok":true}\n\n`);clients.add(res);req.on('close',()=>clients.delete(res));return;}
   if(!authorized(req))return json(res,accessToken?401:503,{ok:false,error:accessToken?'UNAUTHORIZED':'HQ_V2_ACCESS_TOKEN_NOT_CONFIGURED'});
   if(url.pathname==='/api/v2/snapshot'&&req.method==='GET')return json(res,200,{ok:true,data:await snapshot()});
+  if(url.pathname==='/api/v2/capabilities'&&req.method==='GET'){await syncToolConnections();return json(res,200,{ok:true,adapters:registry.list(),runtime:{url:runtimeUrl,mode:'server-side'},note:'هذه اتصالات Backend مستقلة. موصلات ChatGPT الشخصية تبقى في جلسة ChatGPT ولا تُعرض كأن التطبيق يملك صلاحيتها مباشرة.'});}
   if(url.pathname==='/api/v2/tasks'&&req.method==='POST'){const b=await body(req);if(!String(b.command||'').trim())return json(res,400,{ok:false,error:'COMMAND_REQUIRED'});const task=await createTask(b.command,req.headers['idempotency-key']);broadcast('task.created',task);setImmediate(()=>executeTask(task.id).then(()=>broadcast('state.changed',{taskId:task.id})).catch(error=>broadcast('task.error',{taskId:task.id,error:String(error.message||error)})));return json(res,202,{ok:true,task});}
   const taskMatch=url.pathname.match(/^\/api\/v2\/tasks\/([0-9a-f-]+)$/);
   if(taskMatch&&req.method==='GET'){const task=await db.one('hq_v2_tasks',`id=eq.${taskMatch[1]}`);if(!task)return json(res,404,{ok:false,error:'TASK_NOT_FOUND'});const [events,evidence]=await Promise.all([db.list('hq_v2_task_events',`task_id=eq.${task.id}&order=created_at.asc`),db.list('hq_v2_task_evidence',`task_id=eq.${task.id}&order=verified_at.asc`)]);return json(res,200,{ok:true,task,events,evidence});}
@@ -43,6 +57,6 @@ async function api(req,res,url){
 async function serve(res,url){let path=url.pathname==='/'?'/index.html':url.pathname;path=normalize(path).replace(/^(\.\.(\/|\\|$))+/, '');const file=join(ROOT,path);if(!file.startsWith(ROOT))return json(res,403,{error:'FORBIDDEN'});try{if(!(await stat(file)).isFile())throw new Error();const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml'};res.writeHead(200,{'Content-Type':types[extname(file)]||'application/octet-stream','Cache-Control':extname(file)==='.html'?'no-cache':'public, max-age=3600'});res.end(await readFile(file));}catch{json(res,404,{error:'NOT_FOUND'});}}
 
 const server=http.createServer(async(req,res)=>{try{const url=new URL(req.url,'http://localhost');if(url.pathname.startsWith('/api/'))return await api(req,res,url);return await serve(res,url);}catch(error){console.error(JSON.stringify({level:'error',stage:'http',result:'failed',error:String(error.message||error)}));json(res,500,{ok:false,error:'INTERNAL_ERROR'});}});
-server.listen(PORT,'0.0.0.0',()=>console.log(JSON.stringify({level:'info',stage:'startup',result:'ready',port:PORT,dbConfigured:dbConfigured(),authConfigured:Boolean(accessToken)})));
+server.listen(PORT,'0.0.0.0',()=>{console.log(JSON.stringify({level:'info',stage:'startup',result:'ready',port:PORT,dbConfigured:dbConfigured(),authConfigured:Boolean(accessToken)}));setImmediate(async()=>{try{await syncToolConnections();const processed=await processQueue();lastWorkerTick=new Date().toISOString();if(processed)broadcast('state.changed',{processed});}catch(error){console.error(JSON.stringify({level:'error',stage:'startup_sync',result:'failed',error:String(error.message||error)}));}});});
 
-setInterval(async()=>{if(workerBusy||!dbConfigured())return;workerBusy=true;const started=Date.now();try{const processed=await processQueue();if(processed)broadcast('state.changed',{processed});console.log(JSON.stringify({level:'info',stage:'worker_tick',duration:Date.now()-started,result:'ok',processed}));}catch(error){console.error(JSON.stringify({level:'error',stage:'worker_tick',duration:Date.now()-started,result:'failed',error:String(error.message||error)}));}finally{workerBusy=false;}},15000).unref();
+setInterval(async()=>{if(workerBusy||!dbConfigured())return;workerBusy=true;const started=Date.now();try{const processed=await processQueue();lastWorkerTick=new Date().toISOString();if(processed)broadcast('state.changed',{processed});console.log(JSON.stringify({level:'info',stage:'worker_tick',duration:Date.now()-started,result:'ok',processed}));}catch(error){console.error(JSON.stringify({level:'error',stage:'worker_tick',duration:Date.now()-started,result:'failed',error:String(error.message||error)}));}finally{workerBusy=false;}},15000).unref();
