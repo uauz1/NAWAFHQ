@@ -2,7 +2,7 @@ import { AdapterRegistry } from '../core/adapters.mjs';
 import { executePaperOrder } from '../core/paper-broker.mjs';
 
 const token = process.env.GITHUB_TOKEN || '';
-const repos = {qaddha:'uauz1/game',mueen:'uauz1/mueen-islamic-app'};
+const repos = {qaddha:{slug:'uauz1/game',live:'https://qaddha.vercel.app/'},mueen:{slug:'uauz1/mueen-islamic-app',live:'https://mueen-islamic-app.vercel.app/'}};
 
 async function github(path) {
   const response = await fetch(`https://api.github.com${path}`,{headers:{Accept:'application/vnd.github+json','User-Agent':'NAWAF-HQ-V2',...(token?{Authorization:`Bearer ${token}`}:{})}});
@@ -15,17 +15,17 @@ const githubAdapter = {
   id:'github',provider:'GitHub',capabilities:['repository_status','project_execution','qa'],
   connectionState:()=> 'CONNECTED', health:()=> 'HEALTHY',
   async execute({task}) {
-    const repo = repos[task.project_id];
+    const project = repos[task.project_id], repo=project?.slug;
     if (!repo) throw new Error('MISSING_CONNECTION:PROJECT_REPOSITORY');
-    const [meta,commit,runs] = await Promise.all([github(`/repos/${repo}`),github(`/repos/${repo}/commits?per_page=1`),github(`/repos/${repo}/actions/runs?per_page=5`)]);
-    const latestRun = runs.workflow_runs?.[0] || null;
+    let commit=null,apiError=null;
+    try{const commits=await github(`/repos/${repo}/commits?per_page=1`);commit={sha:commits[0]?.sha,title:commits[0]?.commit?.message,updated:commits[0]?.commit?.committer?.date,uri:commits[0]?.html_url,source:'GitHub API'}}catch(error){apiError=String(error.message||error);const feed=await fetch(`https://github.com/${repo}/commits/main.atom`,{signal:AbortSignal.timeout(10000)});const xml=await feed.text();if(!feed.ok)throw error;commit={sha:xml.match(/\/commit\/([0-9a-f]{7,40})/)?.[1],title:xml.match(/<title>\s*([\s\S]*?)\s*<\/title>/g)?.[1]?.replace(/<\/?title>/g,'').trim(),updated:xml.match(/<updated>(.*?)<\/updated>/)?.[1],uri:xml.match(/<link[^>]+href="([^"]+\/commit\/[0-9a-f]+)"/)?.[1],source:'GitHub Atom feed'}}
+    const liveResponse=await fetch(project.live,{redirect:'follow',signal:AbortSignal.timeout(15000)});
     const evidence = [
-      {kind:'GITHUB_COMMIT',label:`${commit[0]?.sha?.slice(0,7)} ${commit[0]?.commit?.message || ''}`,uri:commit[0]?.html_url,data:{sha:commit[0]?.sha,date:commit[0]?.commit?.committer?.date}},
-      {kind:'REPOSITORY',label:repo,uri:meta.html_url,data:{defaultBranch:meta.default_branch,pushedAt:meta.pushed_at}}
+      {kind:'GITHUB_COMMIT',label:`${commit?.sha?.slice(0,7)||'commit'} ${commit?.title||''}`,uri:commit?.uri||`https://github.com/${repo}/commits/main`,data:{sha:commit?.sha,date:commit?.updated,source:commit?.source,apiFallbackReason:apiError}},
+      {kind:'DEPLOYMENT_CHECK',label:`HTTP ${liveResponse.status} ${new URL(liveResponse.url).hostname}`,uri:liveResponse.url,data:{status:liveResponse.status,checkedAt:new Date().toISOString()}}
     ];
-    if (latestRun) evidence.push({kind:'CI_RUN',label:`${latestRun.name}: ${latestRun.conclusion || latestRun.status}`,uri:latestRun.html_url,data:{status:latestRun.status,conclusion:latestRun.conclusion,headSha:latestRun.head_sha}});
-    const buildVerified = latestRun?.conclusion === 'success';
-    return {summary:buildVerified?`آخر تشغيل CI للمشروع نجح (${latestRun.name}).`:`تم فحص المستودع، لكن لا يوجد تشغيل CI ناجح حديث يثبت نجاح البناء.`,evidence,validated:buildVerified};
+    const deploymentVerified=liveResponse.ok;
+    return {summary:deploymentVerified?`تم التحقق من آخر Commit وفحص النسخة المنشورة: الرابط استجاب HTTP ${liveResponse.status}. هذا يثبت أن البناء المنشور متاح، ولا يدّعي وجود CI ناجح بدون دليل مستقل.`:`تم فحص المستودع لكن النسخة المنشورة أعادت HTTP ${liveResponse.status}.`,evidence,validated:deploymentVerified};
   }
 };
 
@@ -35,16 +35,16 @@ const marketData = {
       const r=await fetch(`https://data.alpaca.markets/v2/stocks/${encodeURIComponent(symbol)}/trades/latest`,{headers:{'APCA-API-KEY-ID':process.env.ALPACA_API_KEY,'APCA-API-SECRET-KEY':process.env.ALPACA_SECRET_KEY}});
       const d=await r.json(); if(r.ok&&d?.trade?.p)return {symbol,price:Number(d.trade.p),timestamp:d.trade.t,source:'Alpaca Market Data',uri:`https://app.alpaca.markets/stocks/${symbol}`};
     }
-    const code = symbol.toLowerCase() === '2222' ? '2222.sa' : `${symbol.toLowerCase()}.us`;
-    const uri=`https://stooq.com/q/l/?s=${encodeURIComponent(code)}&f=sd2t2ohlcv&h&e=csv`;
-    const r=await fetch(uri); const text=await r.text(); const lines=text.trim().split('\n'); const values=lines[1]?.split(',');
-    const price=Number(values?.[6]); if(!r.ok||!price)throw new Error('TEMPORARY_MARKET_DATA_UNAVAILABLE');
-    return {symbol,price,timestamp:`${values[1]}T${values[2]}Z`,source:'Stooq',uri};
+    const code = symbol === '2222' ? '2222.SR' : symbol.toUpperCase();
+    const uri=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(code)}?interval=1d&range=5d`;
+    const r=await fetch(uri,{headers:{'User-Agent':'Mozilla/5.0 NAWAF-HQ-V2'},signal:AbortSignal.timeout(25000)}); const d=await r.json();const meta=d?.chart?.result?.[0]?.meta;
+    const price=Number(meta?.regularMarketPrice); if(!r.ok||!price)throw new Error('TEMPORARY_MARKET_DATA_UNAVAILABLE');
+    return {symbol:code,price,currency:meta.currency,exchange:meta.exchangeName,timestamp:new Date(Number(meta.regularMarketTime)*1000).toISOString(),source:'Yahoo Finance Chart',uri};
   }
 };
 
 const marketAdapter = {id:'market_data',provider:'Market Data',capabilities:['finance_analysis'],connectionState:()=> 'CONNECTED',health:()=> 'HEALTHY',async execute({task}){
-  const symbol=/ارامكو/.test(task.command)?'2222':task.command.toUpperCase().match(/\b[A-Z]{1,5}\b/)?.[0];
+  const symbol=/[اأإآ]رامكو/.test(task.command)?'2222':task.command.toUpperCase().match(/\b[A-Z]{1,5}\b/)?.[0];
   if(!symbol)throw new Error('VALIDATION:TICKER_REQUIRED'); const quote=await marketData.quote(symbol);
   return {summary:`السعر المتحقق لـ ${symbol}: ${quote.price}. التحليل المالي الكامل يحتاج بيانات أساسيات إضافية؛ لم يتم اختلاق أي تقديرات.`,validated:true,evidence:[{kind:'MARKET_QUOTE',label:`${symbol} @ ${quote.price}`,uri:quote.uri,data:quote}]};
 }};
