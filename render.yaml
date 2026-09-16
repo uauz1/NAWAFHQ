@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: nawaf-hq-v2
+    runtime: node
+    plan: free
+    branch: v2-production
+    buildCommand: npm ci && npm run v2:check
+    startCommand: npm run v2:start
+    healthCheckPath: /api/v2/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: 24.19.0
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: HQ_V2_ACCESS_TOKEN
+        generateValue: true
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ALPACA_API_KEY
+        sync: false
+      - key: ALPACA_SECRET_KEY
+        sync: false
+

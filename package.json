@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "v2:start": "node v2/server/index.mjs",
+    "v2:check": "node --check v2/server/index.mjs && node --check v2/server/executor.mjs && node --check v2/server/tool-adapters.mjs && node --test v2/tests/*.test.mjs",
+    "v2:test": "node --test v2/tests/*.test.mjs",
     "check:server": "node --check render-server-v2.mjs && node --check project-executor.mjs && node --check state-cloud.mjs && node --check slack-notifier.mjs && node --check trading-adapter.mjs && node --check scripts/apply-execution-backbone-patch.mjs",
     "build": "npm run check:server && node tests/smoke.mjs && node scripts/prepare-dist.mjs",
     "test": "npm run check:server && node tests/smoke.mjs",
