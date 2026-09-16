@@ -13,16 +13,16 @@ function sanitize(s){
      t.progress=100;
    }
  }
- const occupying=new Set(['WORKING','RESEARCHING','REVIEWING','WAITING_FOR_CONNECTION','WAITING_FOR_NAWAF']);
+ const occupying=new Set(['WORKING','RESEARCHING','REVIEWING']);
  const activeByEmployee=new Map();
  for(const t of (s.tasks||[]))if(t?.employeeId&&occupying.has(t.status))activeByEmployee.set(t.employeeId,t);
  for(const e of (s.employees||[])){
    if(has(e?.task)){e.task='';e.status='READY'}
    const active=activeByEmployee.get(e.id);
-   if(!active&&['WORKING','RESEARCHING','REVIEWING','WAITING_FOR_CONNECTION','WAITING_FOR_NAWAF','BLOCKED_BY_TOOL','BLOCKED','PAUSED'].includes(e.status)){
-     e.status='READY';e.task='';
-   }else if(active){e.status=active.status;e.task=active.title||active.details||''}
+   if(active){e.status=active.status;e.task=active.title||active.details||''}
+   else if(e.status!=='READY'||e.task){e.status='READY';e.task=''}
  }
+ for(const p of (s.projects||[]))if(p?.id==='nav'&&p.status==='PAUSED'){p.status='PLANNED';p.phase='مخطط لاحقًا'}
  return s;
 }
 function parse(v){try{return sanitize(JSON.parse(v||'{}')||{})}catch{return {}}}
@@ -31,7 +31,7 @@ function mergeList(remote=[],local=[]){const m=new Map();for(const x of Array.is
 function mergeState(remote={},local={},preferRemoteScalars=false){const out=preferRemoteScalars?{...local,...remote}:{...remote,...local};for(const k of ['employees','projects','tasks','reports','activity','approvals','meetings','goals','connectionRequests','secretaryBriefs'])out[k]=mergeList(remote[k],local[k]);out.settings=preferRemoteScalars?{...(local.settings||{}),...(remote.settings||{})}:{...(remote.settings||{}),...(local.settings||{})};return sanitize(out)}
 function emit(){window.dispatchEvent(new CustomEvent('nawaf:state-updated',{detail:{reason:'cloud-sync'}}))}
 function ensurePill(){let p=document.getElementById('hq-cloud-pill');if(p)return p;p=document.createElement('div');p.id='hq-cloud-pill';p.setAttribute('aria-live','polite');Object.assign(p.style,{position:'fixed',right:'14px',bottom:'14px',zIndex:'10000',padding:'8px 11px',borderRadius:'999px',font:'600 11px system-ui',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,.10)',background:'rgba(10,15,22,.86)',color:'#d9e1ea',boxShadow:'0 8px 30px rgba(0,0,0,.22)',transition:'opacity .2s ease'});document.body.appendChild(p);return p}
-function status(kind,text){const p=ensurePill();p.textContent=text;const map={ok:'#9fe7b2',busy:'#f0cf82',off:'#ff9d9d'};p.style.color=map[kind]||'#d9e1ea';document.documentElement.dataset.cloud=kind==='ok'?'1':'0'}
+function status(kind,text){const p=ensurePill();p.textContent=text;const map={ok:'#9fe7b2',busy:'#f0cf82',off:'#ff9d9d'};p.style.color=map[kind]||'#d9e1ea';p.style.opacity=kind==='ok'?'0.35':'1';document.documentElement.dataset.cloud=kind==='ok'?'1':'0'}
 async function getRemote(){const r=await fetch('/api/state',{cache:'no-store'});const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw new Error(j.error||'CLOUD_READ_FAILED');return j}
 async function pull(){if(pulling||pushing)return false;pulling=true;status('busy','↻ مزامنة');try{const j=await getRemote();cloud=true;const remoteState=j.state&&typeof j.state==='object'?sanitize(j.state):null;const local=parse(localStorage.getItem(KEY));if(remoteState&&Object.keys(remoteState).length){const remoteText=JSON.stringify(remoteState);if(!initialPullDone){const merged=mergeState(remoteState,local,true);nativeSet.call(localStorage,KEY,JSON.stringify(merged));lastRemote=remoteText;lastUpdatedAt=j.updatedAt;initialPullDone=true;dirty=JSON.stringify(merged)!==remoteText;emit();if(dirty)schedule(180)}else if(dirty&&lastUpdatedAt&&j.updatedAt!==lastUpdatedAt&&remoteText!==lastRemote){const merged=mergeState(remoteState,local,false);nativeSet.call(localStorage,KEY,JSON.stringify(merged));lastRemote=remoteText;lastUpdatedAt=j.updatedAt;dirty=true;emit();schedule(180)}else if(!dirty&&remoteText!==JSON.stringify(local)){nativeSet.call(localStorage,KEY,remoteText);lastRemote=remoteText;lastUpdatedAt=j.updatedAt;emit()}else{lastRemote=remoteText;lastUpdatedAt=j.updatedAt}}else if(!Object.keys(local).length){lastRemote='';lastUpdatedAt=j.updatedAt||null;initialPullDone=true}else if(!initialPullDone){initialPullDone=true;dirty=true;schedule(180)}else{dirty=true;schedule(180)}status('ok','✓ متزامن');return true}catch{cloud=false;status('off',navigator.onLine?'⚠ تعذر الحفظ':'● أوفلاين');return false}finally{pulling=false}}
 async function push(retry=true){if(pushing||!initialPullDone)return false;if(!navigator.onLine){status('off','● أوفلاين');return false}pushing=true;status('busy','↑ جاري الحفظ');try{const state=parse(localStorage.getItem(KEY));const body=JSON.stringify(state);if(body===lastRemote&&!dirty){status('ok','✓ متزامن');return true}const r=await fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({state,baseUpdatedAt:lastUpdatedAt}),keepalive:true});const j=await r.json().catch(()=>({}));if(r.status===409&&retry&&j.state){const merged=mergeState(j.state,state,false);nativeSet.call(localStorage,KEY,JSON.stringify(merged));lastUpdatedAt=j.updatedAt||null;lastRemote=JSON.stringify(sanitize(j.state));dirty=true;emit();return await push(false)}if(!r.ok||!j.ok)throw new Error(j.error||'CLOUD_WRITE_FAILED');lastRemote=body;lastUpdatedAt=j.updatedAt||lastUpdatedAt;dirty=false;cloud=true;status('ok','✓ متزامن');return true}catch{cloud=false;status('off','⚠ غير متزامن');return false}finally{pushing=false}}
