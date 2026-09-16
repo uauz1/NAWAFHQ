@@ -18,5 +18,5 @@ await patchFile('render-server-v2.mjs',src=>{
 
 await patchFile('state-cloud.mjs',src=>replaceOnce(src,"for(const k of ['employees','projects','tasks','reports','activity','approvals','meetings','goals'])","for(const k of ['employees','projects','tasks','reports','activity','approvals','meetings','goals','connectionRequests'])",'cloud-connection-requests'));
 
-await patchFile('dist/index.html',src=>replaceOnce(src,'  <script src="hq-task-delete.js?v=20260916-delete-1"></script>','  <script src="hq-task-delete.js?v=20260916-delete-1"></script>\n  <script src="hq-connection-requests.js?v=20260916-connect-1"></script>','connection-ui-script'));
+await patchFile('dist/index.html',src=>replaceOnce(src,'  <script src="hq-task-delete.js?v=20260916-delete-1"></script>','  <script src="hq-task-delete.js?v=20260916-delete-1"></script>\n  <script src="hq-connection-requests.js?v=20260916-connect-2"></script>','connection-ui-script'));
 console.log('NAWAF HQ execution backbone runtime patch applied');
