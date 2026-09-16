@@ -1,0 +1,19 @@
+name: NAWAF HQ V2 CI
+on:
+  push:
+    branches: [v2-production]
+  pull_request:
+    branches: [main]
+    paths: ['v2/**','supabase/migrations/**','render.yaml','package*.json']
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run v2:check
