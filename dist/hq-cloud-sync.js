@@ -13,14 +13,15 @@ function sanitize(s){
      t.progress=100;
    }
  }
+ const occupying=new Set(['WORKING','RESEARCHING','REVIEWING','WAITING_FOR_CONNECTION','WAITING_FOR_NAWAF']);
  const activeByEmployee=new Map();
- for(const t of (s.tasks||[]))if(t?.employeeId&&!['COMPLETED','READY'].includes(t.status))activeByEmployee.set(t.employeeId,t);
+ for(const t of (s.tasks||[]))if(t?.employeeId&&occupying.has(t.status))activeByEmployee.set(t.employeeId,t);
  for(const e of (s.employees||[])){
-   if(has(e?.task)){e.task='';if(e.status!=='PAUSED')e.status='READY'}
+   if(has(e?.task)){e.task='';e.status='READY'}
    const active=activeByEmployee.get(e.id);
-   if(!active&&['WORKING','RESEARCHING','REVIEWING','WAITING_FOR_CONNECTION','WAITING_FOR_NAWAF','BLOCKED_BY_TOOL','BLOCKED'].includes(e.status)){
+   if(!active&&['WORKING','RESEARCHING','REVIEWING','WAITING_FOR_CONNECTION','WAITING_FOR_NAWAF','BLOCKED_BY_TOOL','BLOCKED','PAUSED'].includes(e.status)){
      e.status='READY';e.task='';
-   }
+   }else if(active){e.status=active.status;e.task=active.title||active.details||''}
  }
  return s;
 }
