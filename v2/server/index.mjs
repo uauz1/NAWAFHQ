@@ -8,17 +8,20 @@ import { registry } from './tool-adapters.mjs';
 
 const PORT=Number(process.env.PORT||8787), ROOT=join(fileURLToPath(new URL('.',import.meta.url)),'../web');
 const accessToken=process.env.HQ_V2_ACCESS_TOKEN||''; const clients=new Set(); let workerBusy=false;
+let healthCache={at:0,value:null};
 const json=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));};
 const body=async req=>{let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>1_000_000)throw new Error('BODY_TOO_LARGE');}return raw?JSON.parse(raw):{};};
 const authorized=req=>accessToken&&req.headers.authorization===`Bearer ${accessToken}`;
 const broadcast=(event,data)=>{const payload=`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;for(const res of clients)res.write(payload);};
 
 async function health() {
+  if(healthCache.value&&Date.now()-healthCache.at<60000)return healthCache.value;
   const checks={supabase:{status:'Unavailable'},executionWorker:{status:workerBusy?'Healthy':'Healthy'},paperBroker:{status:'Healthy'},realtime:{status:'Healthy'},github:{status:'Degraded'},aiBackend:{status:process.env.GEMINI_API_KEY?'Healthy':'Unavailable'},marketData:{status:'Degraded'},render:{status:'Healthy'}};
-  if(dbConfigured()){try{await db.list('hq_v2_settings','limit=1','key');checks.supabase={status:'Healthy'}}catch(error){checks.supabase={status:'Unavailable',detail:String(error.message)}}}
-  const tools=registry.list();checks.github={status:tools.find(t=>t.id==='github')?.health==='HEALTHY'?'Healthy':'Unavailable'};
-  checks.marketData={status:tools.find(t=>t.id==='market_data')?.health==='HEALTHY'?'Healthy':'Unavailable'};
-  return {ok:Object.values(checks).every(x=>x.status!=='Unavailable'),service:'nawaf-hq-v2',version:'2.0.0',checks,timestamp:new Date().toISOString(),authConfigured:Boolean(accessToken)};
+  if(dbConfigured()){try{const account=await db.one('hq_v2_paper_accounts','id=eq.default','id');checks.supabase={status:'Healthy'};checks.paperBroker={status:account?'Healthy':'Unavailable'}}catch(error){checks.supabase={status:'Unavailable',detail:String(error.message)};checks.paperBroker={status:'Unavailable'}}}
+  try{const r=await fetch('https://api.github.com/repos/uauz1/NAWAFHQ',{headers:{'User-Agent':'NAWAF-HQ-V2'},signal:AbortSignal.timeout(5000)});checks.github={status:r.ok?'Healthy':'Degraded',detail:`HTTP ${r.status}`}}catch(error){checks.github={status:'Unavailable',detail:String(error.message)}}
+  try{const r=await fetch('https://stooq.com/q/l/?s=aapl.us&f=sd2t2ohlcv&h&e=csv',{signal:AbortSignal.timeout(5000)});const text=await r.text();checks.marketData={status:r.ok&&/AAPL\.US/i.test(text)?'Healthy':'Degraded'}}catch(error){checks.marketData={status:'Unavailable',detail:String(error.message)}}
+  const value={ok:checks.supabase.status==='Healthy'&&checks.executionWorker.status==='Healthy'&&checks.github.status!=='Unavailable',service:'nawaf-hq-v2',version:'2.0.0',checks,timestamp:new Date().toISOString(),authConfigured:Boolean(accessToken)};
+  healthCache={at:Date.now(),value};return value;
 }
 
 async function api(req,res,url){

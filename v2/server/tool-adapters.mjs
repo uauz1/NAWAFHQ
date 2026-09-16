@@ -58,6 +58,16 @@ const companyAdapter = {id:'company_state',provider:'NAWAF HQ State',capabilitie
   return {summary,validated:true,evidence:[{kind:'COMPANY_STATE',label:'Supabase current state',data:{activeTasks:active.length,workingEmployees:employees.filter(e=>e.status!=='READY').length,pendingApprovals:approvals.length,pendingConnections:connections.length,checkedAt:new Date().toISOString()}}]};
 }};
 
+const businessAdapter = {id:'business',provider:'NAWAF HQ Growth Playbook',capabilities:['business'],connectionState:()=> 'CONNECTED',health:()=> 'HEALTHY',async execute({task,db}){
+  const project=task.project_id?await db.one('hq_v2_projects',`id=eq.${encodeURIComponent(task.project_id)}`):null;
+  const projectName=project?.name_ar||'المشروع';
+  const options=task.project_id==='qaddha'?
+    ['حزمة Premium للمضيف: فئات خاصة وإعداد جلسات متقدم','رعاية موسمية داخل فئات محددة بدون إفساد اللعب','حزم محتوى مدفوعة للمناسبات والشركات','نسخة B2B للفعاليات مع شعار العميل وتقارير الجلسة']:
+    ['اختبار باقة اختيارية ذات قيمة واضحة','شراكات غير مزعجة ومرتبطة بسياق المنتج','حزمة مخصصة للجهات والفعاليات'];
+  const summary=`خطة دخل عملية لـ ${projectName}:\n${options.map((x,i)=>`${i+1}. ${x}`).join('\n')}\nالخطوة المجانية الأولى: صفحة تسعير تجريبية + قياس ضغطات الاهتمام لمدة أسبوع قبل بناء الدفع. لا توجد أرقام إيراد مختلقة ولم يُنفذ أي التزام مالي.`;
+  return {summary,validated:true,evidence:[{kind:'PROJECT_CONTEXT',label:`${projectName} growth context`,uri:project?.live_url||project?.repository_url||null,data:{projectId:project?.id||null,status:project?.status||null,generatedAt:new Date().toISOString(),basis:'stored project context + deterministic growth playbook'}}]};
+}};
+
 const researchAdapter = {id:'research',provider:'Gemini Research',capabilities:['research','business'],connectionState:()=> process.env.GEMINI_API_KEY?'CONNECTED':'DISCONNECTED',health:()=>process.env.GEMINI_API_KEY?'HEALTHY':'UNAVAILABLE',async execute({task}){
   const prompt=`أنت موظف مهني في NAWAF HQ. أجب بالعربية السعودية باختصار ووضوح. المسار: ${task.route}. المشروع: ${task.project_id||'الشركة'}. الأمر: ${task.command}. لا تخترع تنفيذًا أو أرقامًا أو مصادر. إذا كانت المهمة عن تحقيق الدخل، قدم خيارات عملية مرتبة مع مخاطر وتجربة مجانية أولى. أعد نصًا فقط.`;
   const model=process.env.GEMINI_MODEL||'gemini-2.5-flash-lite';
@@ -67,4 +77,4 @@ const researchAdapter = {id:'research',provider:'Gemini Research',capabilities:[
   return {summary,validated:true,evidence:[{kind:'AI_PROVIDER_RESPONSE',label:`Gemini ${model} response`,data:{provider:'Google Gemini',model,completedAt:new Date().toISOString(),grounded:false}}]};
 }};
 
-export const registry = new AdapterRegistry().register(githubAdapter).register(marketAdapter).register(paperAdapter).register(companyAdapter).register(researchAdapter);
+export const registry = new AdapterRegistry().register(githubAdapter).register(marketAdapter).register(paperAdapter).register(companyAdapter).register(businessAdapter).register(researchAdapter);
