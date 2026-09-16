@@ -13,7 +13,9 @@ services:
         value: 24.19.0
       - key: SUPABASE_URL
         sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: HQ_V2_DB_KEY
         sync: false
       - key: HQ_V2_ACCESS_TOKEN
         generateValue: true
@@ -25,4 +27,3 @@ services:
         sync: false
       - key: ALPACA_SECRET_KEY
         sync: false
-

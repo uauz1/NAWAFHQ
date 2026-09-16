@@ -10,7 +10,7 @@ Employees are profiles and routing policies. They do not own separate execution 
 
 ## Safety boundaries
 
-- All browser data access goes through the server. The Supabase service-role key is never exposed.
+- All browser data access goes through the server. V2 uses a publishable Supabase key plus a server-only custom key checked by RLS; no service-role key is required or exposed.
 - V2 tables have RLS enabled and access revoked from `anon` and `authenticated`.
 - Mutating API routes require `HQ_V2_ACCESS_TOKEN`.
 - Real-money trading is not implemented. The finance execution path is paper-only.

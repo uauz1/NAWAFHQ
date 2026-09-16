@@ -1,13 +1,14 @@
 const base = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '';
+const serverKey = process.env.HQ_V2_DB_KEY || '';
 
-export const dbConfigured = () => Boolean(base && key);
+export const dbConfigured = () => Boolean(base && key && (process.env.SUPABASE_SERVICE_ROLE_KEY || serverKey));
 
 async function request(path, options = {}) {
   if (!dbConfigured()) throw new Error('SUPABASE_NOT_CONFIGURED');
   const response = await fetch(`${base}/rest/v1/${path}`, {
     ...options,
-    headers: { apikey:key, Authorization:`Bearer ${key}`, 'Content-Type':'application/json', ...(options.headers || {}) }
+    headers: { apikey:key, Authorization:`Bearer ${key}`, 'Content-Type':'application/json', ...(serverKey?{'X-HQ-Server-Key':serverKey}:{}), ...(options.headers || {}) }
   });
   const text = await response.text();
   let data = null; try { data = text ? JSON.parse(text) : null; } catch { data = text; }
