@@ -13,7 +13,7 @@ function ensureCopilot(){
  if(!box){
    box=document.createElement('section'); box.id='hq-company-copilot'; box.className='hq-copilot';
    const stats=main.querySelector('.v8-stats'); if(stats)main.insertBefore(box,stats); else main.prepend(box);
-   box.innerHTML=`<div class="hq-copilot-head"><div><span class="hq-copilot-kicker">LIVE COMPANY COPILOT</span><b>تكلم مع شركتك</b><small id="hq-copilot-sub">أمر واحد → موظف مناسب → تنفيذ حقيقي → نتيجة موثقة</small></div><div class="hq-copilot-live"><i></i><span>متصل بمحرك التنفيذ</span></div></div><div class="hq-copilot-command"><button type="button" id="hq-copilot-mic" class="hq-copilot-mic" aria-label="تحدث">🎙</button><textarea id="hq-copilot-input" rows="2" placeholder="مثال: فهد راجع مُعين وحل أي خطأ مثبت، أو راكان حلل أرامكو"></textarea><button type="button" id="hq-copilot-send" class="hq-copilot-send">نفّذ</button></div><div class="hq-copilot-result"><div id="hq-copilot-state" class="hq-copilot-state">جاهز لاستقبال أمر جديد</div><div id="hq-copilot-task" class="hq-copilot-task"></div></div>`;
+   box.innerHTML=`<div class="hq-copilot-head"><div><span class="hq-copilot-kicker">LIVE COMPANY COPILOT</span><b>تكلم مع شركتك</b><small id="hq-copilot-sub">أمر واحد → موظف مناسب → تنفيذ حقيقي → نتيجة موثقة</small></div><div class="hq-copilot-live"><i></i><span>متصل بمحرك التنفيذ</span></div></div><div class="hq-copilot-command"><button type="button" id="hq-copilot-mic" class="hq-copilot-mic" aria-label="تحدث">🎙</button><textarea id="hq-copilot-input" rows="2" placeholder="مثال: فهد راجع مُعِين وحل أي خطأ مثبت، أو راكان حلل أرامكو"></textarea><button type="button" id="hq-copilot-send" class="hq-copilot-send">نفّذ</button></div><div class="hq-copilot-result"><div id="hq-copilot-state" class="hq-copilot-state">جاهز لاستقبال أمر جديد</div><div id="hq-copilot-task" class="hq-copilot-task"></div></div>`;
    box.querySelector('#hq-copilot-send').onclick=submit;
    box.querySelector('#hq-copilot-input').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();submit()}});
    box.querySelector('#hq-copilot-mic').onclick=listen;
@@ -47,11 +47,13 @@ async function submit(){
 }
 function show(text,taskId){const s=document.getElementById('hq-copilot-state'),t=document.getElementById('hq-copilot-task');if(s)s.textContent=text;if(t)t.dataset.taskId=taskId||''}
 function latestTask(state){return (state.tasks||[]).slice().sort((a,b)=>Date.parse(b.updatedAt||b.createdAt||0)-Date.parse(a.updatedAt||a.createdAt||0))[0]}
+let lastSpoken=sessionStorage.getItem('hq-copilot-last-spoken')||'';
+function speak(text,id){if(!text||!('speechSynthesis'in window)||!id||lastSpoken===id)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='ar-SA';u.rate=1.05;const voices=speechSynthesis.getVoices();const v=voices.find(x=>/^ar(-|_)/i.test(x.lang))||voices.find(x=>/arab/i.test(x.name));if(v)u.voice=v;speechSynthesis.speak(u);lastSpoken=id;sessionStorage.setItem('hq-copilot-last-spoken',id)}catch{}}
 function refresh(){
  const box=ensureCopilot(); if(!box)return;
  const state=read(),taskId=box.querySelector('#hq-copilot-task')?.dataset.taskId||'',task=(state.tasks||[]).find(t=>t.id===taskId)||latestTask(state);
  const line=box.querySelector('#hq-copilot-state'),detail=box.querySelector('#hq-copilot-task');
- if(task&&line&&detail){const emp=(state.employees||[]).find(e=>e.id===task.employeeId);line.textContent=`${emp?.name||'الموظف'} • ${statusLabel(task.status)}`;detail.innerHTML=`<b>${esc(task.title)}</b>${task.aiResult?.summary?`<small>${esc(task.aiResult.summary)}</small>`:task.blockedReason?`<small>${esc(task.blockedReason)}</small>`:''}`;detail.dataset.taskId=task.id}
+ if(task&&line&&detail){const emp=(state.employees||[]).find(e=>e.id===task.employeeId),summary=task.aiResult?.summary||task.blockedReason||'';line.textContent=`${emp?.name||'الموظف'} • ${statusLabel(task.status)}`;detail.innerHTML=`<b>${esc(task.title)}</b>${summary?`<small>${esc(summary)}</small>`:''}`;detail.dataset.taskId=task.id;if(task.status==='COMPLETED'&&task.routing?.source==='COMPANY_COPILOT')speak(`${emp?.name||'الموظف'} خلص المهمة. ${summary||'النتيجة محفوظة عندك في التقارير.'}`,task.id)}
  decorate();
 }
 function decorate(){
