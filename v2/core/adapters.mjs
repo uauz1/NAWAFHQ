@@ -14,8 +14,7 @@ export function classifyError(error) {
   const status = Number(error?.status || message.match(/\b(429|502|503|504)\b/)?.[1]);
   if ([429,502,503,504].includes(status) || /timeout|ECONNRESET|fetch failed/i.test(message)) return {kind:'TEMPORARY_EXTERNAL',retryable:true,message};
   if (/permission|401|403/i.test(message)) return {kind:'PERMISSION',retryable:false,message};
-  if (/not configured|missing connection|missing tool/i.test(message)) return {kind:'CONNECTION_REQUIRED',retryable:false,message};
+  if (/not configured|missing[_ ]connection|missing[_ ]tool/i.test(message)) return {kind:'CONNECTION_REQUIRED',retryable:false,message};
   if (/validation/i.test(message)) return {kind:'VALIDATION_FAILURE',retryable:false,message};
   return {kind:'EXECUTION_BUG',retryable:false,message};
 }
-
