@@ -2,6 +2,8 @@ import { AdapterRegistry } from '../core/adapters.mjs';
 import { executePaperOrder } from '../core/paper-broker.mjs';
 
 const token = process.env.GITHUB_TOKEN || '';
+const geminiKey = process.env.GEMINI_API_KEY || '';
+const runtimeUrl = (process.env.OPENHANDS_RUNTIME_URL || 'https://nawaf-hq-crewai-runtime.onrender.com').replace(/\/$/, '');
 const repos = {qaddha:{slug:'uauz1/game',live:'https://qaddha.vercel.app/'},mueen:{slug:'uauz1/mueen-islamic-app',live:'https://mueen-islamic-app.vercel.app/'}};
 
 async function github(path) {
@@ -11,8 +13,60 @@ async function github(path) {
   return data;
 }
 
+async function runtimeRequest(path, body, timeout=300000) {
+  if (!geminiKey) throw new Error('MISSING_CONNECTION:GEMINI_API_KEY');
+  if (!token) throw new Error('MISSING_CONNECTION:GITHUB_TOKEN');
+  const response = await fetch(`${runtimeUrl}${path}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Gemini-Key':geminiKey,'X-GitHub-Token':token},
+    body:JSON.stringify(body),
+    signal:AbortSignal.timeout(timeout)
+  });
+  const raw=await response.text(); let data={};
+  try{data=raw?JSON.parse(raw):{}}catch{}
+  if(!response.ok||data?.ok===false){const error=new Error(`RUNTIME_${response.status}:${data?.error||data?.detail||raw.slice(0,500)||'execution failed'}`);error.status=response.status;throw error;}
+  return data;
+}
+
+const projectExecutionAdapter = {
+  id:'project_executor',provider:'OpenHands + GitHub',capabilities:['project_execution'],
+  connectionState:()=> geminiKey&&token?'CONNECTED':'DISCONNECTED',
+  health:()=> geminiKey&&token?'HEALTHY':'UNAVAILABLE',
+  async execute({task}) {
+    const project=repos[task.project_id],repo=project?.slug;
+    if(!repo)throw new Error('MISSING_CONNECTION:PROJECT_REPOSITORY');
+    const repoUrl=`https://github.com/${repo}`;
+    const execution=await runtimeRequest('/api/execute',{
+      action:'modify_code',
+      params:{instruction:task.command,objective:task.command,taskTitle:task.title,repoUrl}
+    });
+    const output=execution?.output||{};
+    const checks=Array.isArray(output.checks)?output.checks:[];
+    const evidence=[{
+      kind:'CODE_EXECUTION',
+      label:`OpenHands ${output.hasChanges?'produced changes':'produced no changes'}`,
+      uri:repoUrl,
+      data:{engine:execution.engine||'openhands-sdk',baseCommit:output.baseCommit||null,changedFiles:output.changedFiles||[],verificationPassed:Boolean(output.verificationPassed),checks,durationMs:execution.durationMs||null}
+    }];
+    if(!output.hasChanges){return {summary:'محرك التنفيذ فحص المستودع لكنه لم ينتج أي تغيير في الملفات. لم يتم ادعاء إصلاح غير موجود.',validated:false,evidence};}
+    if(!output.verificationPassed){return {summary:`تم إنشاء تغييرات فعلية في ${output.changedFiles?.length||0} ملف، لكن التحقق لم ينجح بالكامل؛ لم يتم دفع أي Commit.`,validated:false,evidence};}
+    if(!output.diff||!output.baseCommit)throw new Error('VALIDATION:MISSING_VERIFIED_DIFF');
+    const applied=await runtimeRequest('/api/apply',{
+      repository:output.repository||repoUrl,
+      baseCommit:output.baseCommit,
+      diff:output.diff,
+      commitMessage:`NAWAF HQ: ${String(task.title||task.command).slice(0,120)}`
+    },300000);
+    if(applied?.status!=='APPLIED'||!applied?.commitSha)throw new Error(`VALIDATION:APPLY_NOT_CONFIRMED:${applied?.status||'unknown'}`);
+    evidence.push({kind:'GITHUB_COMMIT',label:`Applied ${applied.commitSha.slice(0,7)}`,uri:`${repoUrl}/commit/${applied.commitSha}`,data:{sha:applied.commitSha,changedFiles:applied.changedFiles||output.changedFiles||[],checks:applied.checks||checks,source:'OpenHands verified apply'}});
+    let deployStatus=null;
+    try{const live=await fetch(project.live,{redirect:'follow',signal:AbortSignal.timeout(15000)});deployStatus=live.status;evidence.push({kind:'DEPLOYMENT_CHECK',label:`HTTP ${live.status} ${new URL(live.url).hostname}`,uri:live.url,data:{status:live.status,checkedAt:new Date().toISOString(),note:'Availability check immediately after commit; it does not claim the new commit has finished deploying.'}});}catch(error){evidence.push({kind:'DEPLOYMENT_CHECK',label:'Live URL check unavailable',uri:project.live,data:{error:String(error.message||error),checkedAt:new Date().toISOString()}});}
+    return {summary:`تم تنفيذ التعديل فعليًا على ${repo}: عُدلت ${applied.changedFiles?.length||output.changedFiles?.length||0} ملفات، نجحت فحوصات التنفيذ، وتم دفع Commit ${applied.commitSha.slice(0,7)} إلى GitHub.${deployStatus?` فحص الرابط الحالي أعاد HTTP ${deployStatus}؛ لا نعتبر النشر الجديد مكتملًا بدون دليل نشر مستقل.`:''}`,validated:true,evidence};
+  }
+};
+
 const githubAdapter = {
-  id:'github',provider:'GitHub',capabilities:['repository_status','project_execution','qa'],
+  id:'github',provider:'GitHub',capabilities:['repository_status','qa'],
   connectionState:()=> 'CONNECTED', health:()=> 'HEALTHY',
   async execute({task}) {
     const project = repos[task.project_id], repo=project?.slug;
@@ -78,4 +132,4 @@ const researchAdapter = {id:'research',provider:'Gemini Research',capabilities:[
   return {summary,validated:true,evidence:[{kind:'AI_PROVIDER_RESPONSE',label:`Gemini ${model} response`,data:{provider:'Google Gemini',model,completedAt:new Date().toISOString(),grounded:false}}]};
 }};
 
-export const registry = new AdapterRegistry().register(githubAdapter).register(marketAdapter).register(paperAdapter).register(companyAdapter).register(businessAdapter).register(researchAdapter);
+export const registry = new AdapterRegistry().register(projectExecutionAdapter).register(githubAdapter).register(marketAdapter).register(paperAdapter).register(companyAdapter).register(businessAdapter).register(researchAdapter);
