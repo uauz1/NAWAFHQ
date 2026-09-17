@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "check:server": "node --check render-server-v2.mjs && node --check project-executor.mjs && node --check state-cloud.mjs && node --check slack-notifier.mjs && node --check trading-adapter.mjs && node --check scripts/apply-execution-backbone-patch.mjs",
-    "build": "npm run check:server && node tests/smoke.mjs && node scripts/prepare-dist.mjs",
-    "test": "npm run check:server && node tests/smoke.mjs",
+    "build": "npm run check:server && node tests/smoke.mjs && node tests/copilot-smoke.mjs && node scripts/prepare-dist.mjs",
+    "test": "npm run check:server && node tests/smoke.mjs && node tests/copilot-smoke.mjs",
     "start": "node scripts/apply-execution-backbone-patch.mjs && node render-server-v2.mjs"
   },
   "dependencies": {
