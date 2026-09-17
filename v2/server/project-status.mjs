@@ -2,6 +2,12 @@ const statusGroups={active:new Set(['QUEUED','ROUTING','PLANNING','WORKING','RES
 
 const projectLabel=project=>project?.name_ar||project?.name_en||project?.id||'المشروع';
 const short=task=>String(task?.title||task?.command||'').replace(/\s+/g,' ').trim().slice(0,110);
+const isStatusInquiry=task=>task?.route==='PROJECT_STATUS';
+const isToolFailure=task=>{
+  const error=String(task?.error_message||'');
+  const cls=String(task?.error_class||'');
+  return /^(GITHUB_|RUNTIME_|TEMPORARY_|GEMINI_|MISSING_CONNECTION:)/.test(error)||['CONNECTION_REQUIRED','TEMPORARY_EXTERNAL','RATE_LIMIT','AUTH','TOOL_UNAVAILABLE'].includes(cls);
+};
 
 function repoSlug(url){
   try{const u=new URL(url);const parts=u.pathname.replace(/^\//,'').replace(/\.git$/,'').split('/');return parts.length>=2?`${parts[0]}/${parts[1]}`:null;}catch{return null;}
@@ -20,10 +26,12 @@ export async function executeProjectStatus({task,db}){
   const project=await db.one('hq_v2_projects',`id=eq.${encodeURIComponent(task.project_id)}`);
   if(!project)throw new Error('VALIDATION:PROJECT_NOT_FOUND');
 
-  const tasks=await db.list('hq_v2_tasks',`project_id=eq.${encodeURIComponent(task.project_id)}&order=created_at.desc&limit=30`);
-  const relevant=tasks.filter(x=>x.id!==task.id);
+  const tasks=await db.list('hq_v2_tasks',`project_id=eq.${encodeURIComponent(task.project_id)}&order=created_at.desc&limit=40`);
+  const relevant=tasks.filter(x=>x.id!==task.id&&!isStatusInquiry(x));
   const completed=relevant.filter(x=>statusGroups.done.has(x.status));
-  const attention=relevant.filter(x=>statusGroups.attention.has(x.status));
+  const allAttention=relevant.filter(x=>statusGroups.attention.has(x.status));
+  const toolFailures=allAttention.filter(isToolFailure);
+  const projectAttention=allAttention.filter(x=>!isToolFailure(x));
   const active=relevant.filter(x=>statusGroups.active.has(x.status));
 
   const evidence=[];
@@ -54,20 +62,22 @@ export async function executeProjectStatus({task,db}){
   }
 
   const lastDone=completed.slice(0,3).map(short).filter(Boolean);
-  const needsAttention=attention.slice(0,3).map(x=>`${short(x)} [${x.status}]`).filter(Boolean);
+  const needsAttention=projectAttention.slice(0,3).map(x=>`${short(x)} [${x.status}]`).filter(Boolean);
   const inProgress=active.slice(0,3).map(x=>`${short(x)} [${x.status}]`).filter(Boolean);
+  const toolIssues=toolFailures.slice(0,3).map(x=>`${short(x)} — ${String(x.error_message||x.error_class||'تعثر أداة').slice(0,140)}`).filter(Boolean);
 
-  evidence.push({kind:'PROJECT_TASK_STATE',label:`حالة ${projectLabel(project)} من سجل HQ`,uri:project.repository_url||project.live_url||null,data:{projectId:project.id,status:project.status,counts:{completed:completed.length,attention:attention.length,active:active.length,totalObserved:relevant.length},recentCompleted:completed.slice(0,5).map(x=>({id:x.id,title:short(x),status:x.status,completed_at:x.completed_at})),needsAttention:attention.slice(0,5).map(x=>({id:x.id,title:short(x),status:x.status,error:x.error_message||null})),active:active.slice(0,5).map(x=>({id:x.id,title:short(x),status:x.status})),checkedAt:new Date().toISOString()}});
+  evidence.push({kind:'PROJECT_TASK_STATE',label:`حالة ${projectLabel(project)} من سجل HQ`,uri:project.repository_url||project.live_url||null,data:{projectId:project.id,status:project.status,counts:{completed:completed.length,active:active.length,projectAttention:projectAttention.length,toolFailures:toolFailures.length,totalObserved:relevant.length},recentCompleted:completed.slice(0,5).map(x=>({id:x.id,title:short(x),status:x.status,completed_at:x.completed_at,route:x.route})),projectAttention:projectAttention.slice(0,5).map(x=>({id:x.id,title:short(x),status:x.status,error:x.error_message||null,route:x.route})),toolFailures:toolFailures.slice(0,5).map(x=>({id:x.id,title:short(x),status:x.status,error:x.error_message||null,errorClass:x.error_class||null,route:x.route})),active:active.slice(0,5).map(x=>({id:x.id,title:short(x),status:x.status,route:x.route})),excludedStatusInquiries:tasks.filter(isStatusInquiry).length,checkedAt:new Date().toISOString()}});
 
   const summary=[
     `موجز ${projectLabel(project)}:`,
     commitSummary,
     liveSummary,
-    `سجل HQ الحالي: ${completed.length} مهام مكتملة، ${active.length} نشطة/بالطابور، ${attention.length} تحتاج انتباه.`,
-    lastDone.length?`آخر ما اكتمل:\n- ${lastDone.join('\n- ')}`:'ما عندي مهام مكتملة حديثة موثقة في سجل HQ أعرضها.',
-    inProgress.length?`قيد العمل الآن:\n- ${inProgress.join('\n- ')}`:'ما فيه مهام مشروع نشطة الآن.',
-    needsAttention.length?`وش باقي/يحتاج انتباه:\n- ${needsAttention.join('\n- ')}`:'ما فيه عناصر فاشلة أو متوقفة مسجلة حاليًا ضمن آخر السجل المفحوص.',
-    'هذا الموجز مبني فقط على GitHub والرابط المنشور وسجل مهام HQ؛ ما أعتبر أي شيء مكتمل بدون دليل.'
+    `أعمال المشروع في HQ: ${completed.length} مكتملة، ${active.length} نشطة/بالطابور، ${projectAttention.length} تحتاج انتباه فعلي بالمشروع.`,
+    lastDone.length?`آخر ما اكتمل:\n- ${lastDone.join('\n- ')}`:'ما عندي أعمال مشروع مكتملة حديثة موثقة في سجل HQ أعرضها.',
+    inProgress.length?`قيد العمل الآن:\n- ${inProgress.join('\n- ')}`:'ما فيه أعمال مشروع نشطة الآن.',
+    needsAttention.length?`وش باقي/يحتاج انتباه بالمشروع:\n- ${needsAttention.join('\n- ')}`:'ما فيه مشاكل مشروع فاشلة أو متوقفة مسجلة حاليًا ضمن آخر السجل المفحوص.',
+    toolIssues.length?`فحوصات/أدوات تعثرت سابقًا (ليست مشكلة مثبتة في المشروع):\n- ${toolIssues.join('\n- ')}`:'ما فيه أعطال أدوات مؤثرة ضمن آخر السجل المفحوص.',
+    'استفسارات الحالة نفسها مستبعدة من عداد إنجازات المشروع. هذا الموجز مبني فقط على GitHub والرابط المنشور وسجل أعمال HQ؛ ما أعتبر أي شيء مكتمل بدون دليل.'
   ].join('\n\n');
 
   return {summary,validated:evidence.some(x=>x.kind==='GITHUB_COMMITS'||x.kind==='DEPLOYMENT_CHECK'),evidence};
