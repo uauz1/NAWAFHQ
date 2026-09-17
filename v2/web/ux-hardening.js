@@ -35,6 +35,11 @@
     banner.classList.add('show');
   };
   const hideBanner = () => banner.classList.remove('show');
+  const goRoute = route => {
+    const button = [...document.querySelectorAll('[data-route]')].find(el => el.dataset.route === route);
+    if (button) button.click();
+    else location.hash = route;
+  };
   const updateNetworkState = () => {
     if (!navigator.onLine) showBanner('الاتصال بالإنترنت منقطع — بياناتك محفوظة، وبنرجع نتصل تلقائيًا.', 'bad');
     else {
@@ -96,21 +101,20 @@
     if (assign) {
       const id = assign.dataset.assignEmployee;
       ensureEmployeeDialog().close();
-      location.hash = 'command';
+      goRoute('command');
       setTimeout(() => {
         const input = document.querySelector('#commandInput');
         if (input) {
           input.value = `${employeeNames[id] || id} `;
           input.focus();
         }
-      }, 80);
+      }, 100);
       return;
     }
     const target = event.target.closest('[data-route-target]');
     if (target) {
       ensureEmployeeDialog().close();
-      location.hash = target.dataset.routeTarget;
-      window.dispatchEvent(new HashChangeEvent('hashchange'));
+      goRoute(target.dataset.routeTarget);
     }
   }, true);
 
@@ -118,12 +122,12 @@
   if (mobileMenu) {
     mobileMenu.setAttribute('aria-label', 'فتح مركز الأوامر');
     mobileMenu.textContent = '⌘';
-    mobileMenu.addEventListener('click', () => {
-      location.hash = 'command';
-      window.dispatchEvent(new HashChangeEvent('hashchange'));
-    });
+    mobileMenu.addEventListener('click', () => goRoute('command'));
   }
 
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && navigator.onLine) window.dispatchEvent(new Event('hq:reconnect'));
+  });
   window.addEventListener('unhandledrejection', event => {
     const message = String(event.reason?.message || event.reason || 'خطأ غير معروف');
     if (/fetch|network|HTTP_5|timeout/i.test(message)) showBanner('الاتصال بالخدمة تعثر مؤقتًا — جاري إعادة المحاولة تلقائيًا.', 'warn');
