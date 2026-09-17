@@ -3,6 +3,7 @@ import { assertTransition } from '../core/state-machine.mjs';
 import { classifyError } from '../core/adapters.mjs';
 import { db } from './db.mjs';
 import { registry } from './tool-adapters.mjs';
+import { executeProjectStatus } from './project-status.mjs';
 
 const capabilityFor = route => ({GENERAL:'general',PROJECT_STATUS:'repository_status',PROJECT_EXECUTION:'project_execution',RESEARCH:'research',QA:'qa',DESIGN:'research',BUSINESS:'business',FINANCE_ANALYSIS:'finance_analysis',TRADING_PAPER:'paper_trade'}[route]);
 const employeeStatusFor = route => route==='RESEARCH'?'RESEARCHING':['QA','PROJECT_STATUS'].includes(route)?'REVIEWING':'WORKING';
@@ -26,7 +27,7 @@ export async function executeTask(taskId) {
     await setTask(task,'ROUTING',{started_at:task.started_at||new Date().toISOString(),next_retry_at:null});
     const parsed=parseCommand(task.command); const capability=capabilityFor(parsed.route);
     if(parsed.requiresApproval){const approved=await db.one('hq_v2_approvals',`task_id=eq.${task.id}&status=eq.APPROVED`);if(approved){await setTask(task,'BLOCKED',{error_class:'UNSUPPORTED_HIGH_IMPACT_ACTION',error_message:'تمت الموافقة، لكن لا يوجد محول آمن متصل لهذا الإجراء. لم يُنفذ أي تغيير.'});await db.insert('hq_v2_secretary_briefs',{task_id:task.id,title:`لم يُنفذ: ${task.title}`,body:'الموافقة مسجلة، لكن لا يوجد محول آمن متصل. لم يحدث أي تغيير خارجي.',severity:'WARNING'},false);await releaseEmployee(task);return task;}await setTask(task,'WAITING_FOR_APPROVAL');await db.insert('hq_v2_approvals',{task_id:task.id,employee_id:task.employee_id,action:task.command,reason:'إجراء عالي التأثير',impact:'قد يغيّر بيانات أو ينفذ إجراءً حقيقيًا',tool_id:null});await releaseEmployee(task);return task;}
-    const adapter=registry.resolve(capability);
+    const adapter=parsed.route==='PROJECT_STATUS'?{id:'project_status',execute:executeProjectStatus}:registry.resolve(capability);
     if(!adapter){await setTask(task,'WAITING_FOR_CONNECTION',{adapter_id:null});const existing=await db.one('hq_v2_connection_requests',`task_id=eq.${task.id}&provider=eq.${encodeURIComponent(capability)}&status=in.(PENDING,APPROVED)`);if(!existing)await db.insert('hq_v2_connection_requests',{task_id:task.id,employee_id:task.employee_id,provider:capability,reason:`يلزم اتصال يدعم ${capability}`,permissions:[capability],costs_money:false});await releaseEmployee(task);return task;}
     await setTask(task,'PLANNING',{adapter_id:adapter.id,plan:[{stage:'collect_facts'},{stage:'execute'},{stage:'validate'}]});
     const workStatus=parsed.route==='RESEARCH'?'RESEARCHING':['QA','PROJECT_STATUS'].includes(parsed.route)?'REVIEWING':'WORKING'; await setTask(task,workStatus);
