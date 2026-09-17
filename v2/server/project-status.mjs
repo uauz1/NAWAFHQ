@@ -2,11 +2,13 @@ const statusGroups={active:new Set(['QUEUED','ROUTING','PLANNING','WORKING','RES
 
 const projectLabel=project=>project?.name_ar||project?.name_en||project?.id||'المشروع';
 const short=task=>String(task?.title||task?.command||'').replace(/\s+/g,' ').trim().slice(0,110);
-const isStatusInquiry=task=>task?.route==='PROJECT_STATUS';
+const normalize=value=>String(value||'').toLowerCase().replace(/[إأآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/\s+/g,' ').trim();
+const statusWords=['موجز','ملخص','وش صار','ايش صار','وش وضع','وضع المشروع','حاله المشروع','وين وصل','وين وصلت','وش باقي','ما صار','تقرير عن'];
+const isStatusInquiry=task=>task?.route==='PROJECT_STATUS'||statusWords.some(word=>normalize(task?.command||task?.title).includes(normalize(word)));
 const isToolFailure=task=>{
   const error=String(task?.error_message||'');
   const cls=String(task?.error_class||'');
-  return /^(GITHUB_|RUNTIME_|TEMPORARY_|GEMINI_|MISSING_CONNECTION:)/.test(error)||['CONNECTION_REQUIRED','TEMPORARY_EXTERNAL','RATE_LIMIT','AUTH','TOOL_UNAVAILABLE'].includes(cls);
+  return /^(GITHUB_|RUNTIME_|TEMPORARY_|GEMINI_|MISSING_CONNECTION:)/.test(error)||['CONNECTION_REQUIRED','TEMPORARY_EXTERNAL','RATE_LIMIT','AUTH','TOOL_UNAVAILABLE','PERMISSION'].includes(cls);
 };
 
 function repoSlug(url){
@@ -27,6 +29,7 @@ export async function executeProjectStatus({task,db}){
   if(!project)throw new Error('VALIDATION:PROJECT_NOT_FOUND');
 
   const tasks=await db.list('hq_v2_tasks',`project_id=eq.${encodeURIComponent(task.project_id)}&order=created_at.desc&limit=40`);
+  const statusInquiries=tasks.filter(isStatusInquiry);
   const relevant=tasks.filter(x=>x.id!==task.id&&!isStatusInquiry(x));
   const completed=relevant.filter(x=>statusGroups.done.has(x.status));
   const allAttention=relevant.filter(x=>statusGroups.attention.has(x.status));
@@ -66,7 +69,7 @@ export async function executeProjectStatus({task,db}){
   const inProgress=active.slice(0,3).map(x=>`${short(x)} [${x.status}]`).filter(Boolean);
   const toolIssues=toolFailures.slice(0,3).map(x=>`${short(x)} — ${String(x.error_message||x.error_class||'تعثر أداة').slice(0,140)}`).filter(Boolean);
 
-  evidence.push({kind:'PROJECT_TASK_STATE',label:`حالة ${projectLabel(project)} من سجل HQ`,uri:project.repository_url||project.live_url||null,data:{projectId:project.id,status:project.status,counts:{completed:completed.length,active:active.length,projectAttention:projectAttention.length,toolFailures:toolFailures.length,totalObserved:relevant.length},recentCompleted:completed.slice(0,5).map(x=>({id:x.id,title:short(x),status:x.status,completed_at:x.completed_at,route:x.route})),projectAttention:projectAttention.slice(0,5).map(x=>({id:x.id,title:short(x),status:x.status,error:x.error_message||null,route:x.route})),toolFailures:toolFailures.slice(0,5).map(x=>({id:x.id,title:short(x),status:x.status,error:x.error_message||null,errorClass:x.error_class||null,route:x.route})),active:active.slice(0,5).map(x=>({id:x.id,title:short(x),status:x.status,route:x.route})),excludedStatusInquiries:tasks.filter(isStatusInquiry).length,checkedAt:new Date().toISOString()}});
+  evidence.push({kind:'PROJECT_TASK_STATE',label:`حالة ${projectLabel(project)} من سجل HQ`,uri:project.repository_url||project.live_url||null,data:{projectId:project.id,status:project.status,counts:{completed:completed.length,active:active.length,projectAttention:projectAttention.length,toolFailures:toolFailures.length,totalObserved:relevant.length},recentCompleted:completed.slice(0,5).map(x=>({id:x.id,title:short(x),status:x.status,completed_at:x.completed_at,route:x.route})),projectAttention:projectAttention.slice(0,5).map(x=>({id:x.id,title:short(x),status:x.status,error:x.error_message||null,route:x.route})),toolFailures:toolFailures.slice(0,5).map(x=>({id:x.id,title:short(x),status:x.status,error:x.error_message||null,errorClass:x.error_class||null,route:x.route})),active:active.slice(0,5).map(x=>({id:x.id,title:short(x),status:x.status,route:x.route})),excludedStatusInquiries:statusInquiries.length,checkedAt:new Date().toISOString()}});
 
   const summary=[
     `موجز ${projectLabel(project)}:`,
@@ -77,7 +80,7 @@ export async function executeProjectStatus({task,db}){
     inProgress.length?`قيد العمل الآن:\n- ${inProgress.join('\n- ')}`:'ما فيه أعمال مشروع نشطة الآن.',
     needsAttention.length?`وش باقي/يحتاج انتباه بالمشروع:\n- ${needsAttention.join('\n- ')}`:'ما فيه مشاكل مشروع فاشلة أو متوقفة مسجلة حاليًا ضمن آخر السجل المفحوص.',
     toolIssues.length?`فحوصات/أدوات تعثرت سابقًا (ليست مشكلة مثبتة في المشروع):\n- ${toolIssues.join('\n- ')}`:'ما فيه أعطال أدوات مؤثرة ضمن آخر السجل المفحوص.',
-    'استفسارات الحالة نفسها مستبعدة من عداد إنجازات المشروع. هذا الموجز مبني فقط على GitHub والرابط المنشور وسجل أعمال HQ؛ ما أعتبر أي شيء مكتمل بدون دليل.'
+    `استبعدت ${statusInquiries.length} استفسار حالة/موجز من عداد إنجازات المشروع. هذا الموجز مبني فقط على GitHub والرابط المنشور وسجل أعمال HQ؛ ما أعتبر أي شيء مكتمل بدون دليل.`
   ].join('\n\n');
 
   return {summary,validated:evidence.some(x=>x.kind==='GITHUB_COMMITS'||x.kind==='DEPLOYMENT_CHECK'),evidence};
