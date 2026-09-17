@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createTask, executeTask, processQueue } from './executor.mjs';
 import { db, dbConfigured, snapshot } from './db.mjs';
 import { registry } from './tool-adapters.mjs';
+import { handleManagementApi } from './management.mjs';
 
 const PORT=Number(process.env.PORT||8787), ROOT=join(fileURLToPath(new URL('.',import.meta.url)),'../web');
 const accessToken=process.env.HQ_V2_ACCESS_TOKEN||''; const clients=new Set(); let workerBusy=false; let lastWorkerTick=null;
@@ -79,9 +80,9 @@ async function health() {
   if(dbConfigured()){try{const account=await db.one('hq_v2_paper_accounts','id=eq.default','id');checks.supabase={status:'Healthy'};checks.paperBroker={status:account?'Healthy':'Unavailable'};await db.list('hq_v2_nav_memory','limit=1','id');checks.navMemory={status:'Healthy'}}catch(error){checks.supabase={status:'Unavailable',detail:String(error.message)};checks.paperBroker={status:'Unavailable'};checks.navMemory={status:'Unavailable',detail:String(error.message)}}}
   checks.executionWorker={status:'Healthy',detail:workerBusy?'ينفذ الآن':lastWorkerTick?`آخر دورة ${lastWorkerTick}`:'بانتظار أول دورة'};
   try{const r=await fetch(`${runtimeUrl}/health`,{signal:AbortSignal.timeout(20000)});const d=await r.json().catch(()=>({}));checks.projectExecutor={status:r.ok&&d?.ok?'Healthy':'Degraded',detail:r.ok?`OpenHands ${d?.openhands?.status||'reachable'}`:`HTTP ${r.status}`}}catch(error){checks.projectExecutor={status:'Unavailable',detail:String(error.message||error)}}
-  try{const r=await fetch('https://api.github.com/repos/uauz1/NAWAFHQ',{headers:{'User-Agent':'NAWAF-HQ-V2'},signal:AbortSignal.timeout(5000)});checks.github={status:r.ok?'Healthy':'Degraded',detail:`HTTP ${r.status}`}}catch(error){checks.github={status:'Unavailable',detail:String(error.message)}}
+  try{const ghHeaders={'User-Agent':'NAWAF-HQ-V2',Accept:'application/vnd.github+json',...(process.env.GITHUB_TOKEN?{Authorization:`Bearer ${process.env.GITHUB_TOKEN}`}:{})};const r=await fetch('https://api.github.com/repos/uauz1/NAWAFHQ',{headers:ghHeaders,signal:AbortSignal.timeout(5000)});checks.github={status:r.ok?'Healthy':'Degraded',detail:`HTTP ${r.status}`}}catch(error){checks.github={status:'Unavailable',detail:String(error.message)}}
   try{const r=await fetch('https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1d',{headers:{'User-Agent':'Mozilla/5.0 NAWAF-HQ-V2'},signal:AbortSignal.timeout(5000)});const d=await r.json();checks.marketData={status:r.ok&&d?.chart?.result?.[0]?.meta?.regularMarketPrice?'Healthy':'Degraded'}}catch(error){checks.marketData={status:'Unavailable',detail:String(error.message)}}
-  const value={ok:checks.supabase.status==='Healthy'&&checks.executionWorker.status==='Healthy'&&checks.projectExecutor.status!=='Unavailable'&&checks.github.status!=='Unavailable'&&checks.navMemory.status==='Healthy',service:'nawaf-hq-v2',version:'2.2.0',checks,timestamp:new Date().toISOString(),authConfigured:Boolean(accessToken)};
+  const value={ok:checks.supabase.status==='Healthy'&&checks.executionWorker.status==='Healthy'&&checks.projectExecutor.status!=='Unavailable'&&checks.github.status!=='Unavailable'&&checks.navMemory.status==='Healthy',service:'nawaf-hq-v2',version:'2.3.0',checks,timestamp:new Date().toISOString(),authConfigured:Boolean(accessToken)};
   healthCache={at:Date.now(),value};return value;
 }
 
@@ -89,6 +90,7 @@ async function api(req,res,url){
   if(url.pathname==='/api/v2/health'&&req.method==='GET')return json(res,200,await health());
   if(url.pathname==='/api/v2/events'&&req.method==='GET'){res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache','Connection':'keep-alive'});res.write(`event: connected\ndata: {"ok":true}\n\n`);clients.add(res);req.on('close',()=>clients.delete(res));return;}
   if(!authorized(req))return json(res,accessToken?401:503,{ok:false,error:accessToken?'UNAUTHORIZED':'HQ_V2_ACCESS_TOKEN_NOT_CONFIGURED'});
+  if(await handleManagementApi({req,res,url,db,json,body,broadcast}))return;
   if(url.pathname==='/api/v2/snapshot'&&req.method==='GET')return json(res,200,{ok:true,data:await snapshot()});
   if(url.pathname==='/api/v2/capabilities'&&req.method==='GET'){await syncToolConnections();return json(res,200,{ok:true,adapters:registry.list(),runtime:{url:runtimeUrl,mode:'server-side'},chatgptConnectors:chatgptConnectorCatalog,note:'Backend الشركة ينفذ عبر محولاته. موصلات ChatGPT الشخصية تبقى في جلسة ChatGPT ولا تُعرض كأن التطبيق يملك صلاحيتها مباشرة.'});}
   if(url.pathname==='/api/v2/nav/context'&&req.method==='GET')return json(res,200,{ok:true,data:await navContext()});
@@ -111,7 +113,7 @@ async function api(req,res,url){
   }
   if(url.pathname==='/api/v2/tasks'&&req.method==='POST'){const b=await body(req);if(!String(b.command||'').trim())return json(res,400,{ok:false,error:'COMMAND_REQUIRED'});const task=await createTask(b.command,req.headers['idempotency-key']);broadcast('task.created',task);setImmediate(()=>executeTask(task.id).then(()=>broadcast('state.changed',{taskId:task.id})).catch(error=>broadcast('task.error',{taskId:task.id,error:String(error.message||error)})));return json(res,202,{ok:true,task});}
   const taskMatch=url.pathname.match(/^\/api\/v2\/tasks\/([0-9a-f-]+)$/);
-  if(taskMatch&&req.method==='GET'){const task=await db.one('hq_v2_tasks',`id=eq.${taskMatch[1]}`);if(!task)return json(res,404,{ok:false,error:'TASK_NOT_FOUND'});const [events,evidence]=await Promise.all([db.list('hq_v2_task_events',`task_id=eq.${task.id}&order=created_at.asc`),db.list('hq_v2_task_evidence',`task_id=eq.${task.id}&order=verified_at.asc`)]);return json(res,200,{ok:true,task,events,evidence});}
+  if(taskMatch&&req.method==='GET'){const task=await db.one('hq_v2_tasks',`id=eq.${taskMatch[1]}`);if(!task)return json(res,404,{ok:false,error:'TASK_NOT_FOUND'});const [events,evidence,messages]=await Promise.all([db.list('hq_v2_task_events',`task_id=eq.${task.id}&order=created_at.asc`),db.list('hq_v2_task_evidence',`task_id=eq.${task.id}&order=verified_at.asc`),db.list('hq_v2_task_messages',`task_id=eq.${task.id}&order=created_at.asc`)]);return json(res,200,{ok:true,task,events,evidence,messages});}
   const approvalMatch=url.pathname.match(/^\/api\/v2\/approvals\/([0-9a-f-]+)\/(approve|reject)$/);
   if(approvalMatch&&req.method==='POST'){const status=approvalMatch[2]==='approve'?'APPROVED':'DECLINED';const rows=await db.update('hq_v2_approvals',`id=eq.${approvalMatch[1]}&status=eq.PENDING`,{status,resolved_at:new Date().toISOString()});if(!rows.length)return json(res,409,{ok:false,error:'APPROVAL_NOT_PENDING'});await db.update('hq_v2_tasks',`id=eq.${rows[0].task_id}`,{status:status==='APPROVED'?'QUEUED':'CANCELLED',updated_at:new Date().toISOString()},false);broadcast('state.changed',{approvalId:rows[0].id});return json(res,200,{ok:true,approval:rows[0]});}
   const connectionMatch=url.pathname.match(/^\/api\/v2\/connections\/([0-9a-f-]+)\/(approve|reject)$/);
