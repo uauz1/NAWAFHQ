@@ -106,7 +106,7 @@ const marketAdapter = {id:'market_data',provider:'Market Data',capabilities:['fi
 
 const paperAdapter = {id:'paper_broker',provider:'Internal Paper Broker',capabilities:['paper_trade'],connectionState:()=> 'CONNECTED',health:()=> 'HEALTHY',execute:ctx=>executePaperOrder({...ctx,marketData})};
 
-const companyAdapter = {id:'company_state',provider:'NAWAF HQ State',capabilities:['general'],connectionState:()=> 'CONNECTED',health:()=> 'HEALTHY',async execute({db}){
+const companyAdapter = {id:'company_state',provider:'NAWAF HQ State',capabilities:['company_state'],connectionState:()=> 'CONNECTED',health:()=> 'HEALTHY',async execute({db}){
   const [tasks,employees,approvals,connections]=await Promise.all([db.list('hq_v2_tasks','order=created_at.desc&limit=100'),db.list('hq_v2_employees'),db.list('hq_v2_approvals','status=eq.PENDING'),db.list('hq_v2_connection_requests','status=eq.PENDING')]);
   const active=tasks.filter(t=>['ROUTING','PLANNING','WORKING','RESEARCHING','REVIEWING'].includes(t.status));
   const summary=`الشركة الآن: ${active.length} مهام نشطة، ${employees.filter(e=>e.status!=='READY').length} موظفين يعملون، ${approvals.length} موافقات و${connections.length} طلبات ربط تحتاج انتباه. الأرقام من Supabase وقت التنفيذ.`;
@@ -123,13 +123,13 @@ const businessAdapter = {id:'business',provider:'NAWAF HQ Growth Playbook',capab
   return {summary,validated:true,evidence:[{kind:'PROJECT_CONTEXT',label:`${projectName} growth context`,uri:project?.live_url||project?.repository_url||null,data:{projectId:project?.id||null,status:project?.status||null,generatedAt:new Date().toISOString(),basis:'stored project context + deterministic growth playbook'}}]};
 }};
 
-const researchAdapter = {id:'research',provider:'Gemini Research',capabilities:['research','business'],connectionState:()=> process.env.GEMINI_API_KEY?'CONNECTED':'DISCONNECTED',health:()=>process.env.GEMINI_API_KEY?'HEALTHY':'UNAVAILABLE',async execute({task}){
-  const prompt=`أنت موظف مهني في NAWAF HQ. أجب بالعربية السعودية باختصار ووضوح. المسار: ${task.route}. المشروع: ${task.project_id||'الشركة'}. الأمر: ${task.command}. لا تخترع تنفيذًا أو أرقامًا أو مصادر. إذا كانت المهمة عن تحقيق الدخل، قدم خيارات عملية مرتبة مع مخاطر وتجربة مجانية أولى. أعد نصًا فقط.`;
+const researchAdapter = {id:'research',provider:'Gemini Research',capabilities:['general','research','business'],connectionState:()=> process.env.GEMINI_API_KEY?'CONNECTED':'DISCONNECTED',health:()=>process.env.GEMINI_API_KEY?'HEALTHY':'UNAVAILABLE',async execute({task}){
+  const prompt=`أنت موظف مهني في NAWAF HQ. نفّذ المطلوب فكريًا وقدّم الناتج نفسه، لا تكتفِ بوصف حالة الشركة. أجب بالعربية السعودية باختصار ووضوح. الموظف: ${task.employee_id||'غير محدد'}. المسار: ${task.route}. المشروع: ${task.project_id||'الشركة'}. الأمر: ${task.command}. إذا كان الطلب إبداعيًا فاقترح أفكارًا ملموسة قابلة للتنفيذ. لا تخترع تنفيذًا خارجيًا أو أرقامًا أو مصادر. إذا كانت المهمة عن تحقيق الدخل، قدم خيارات عملية مرتبة مع مخاطر وتجربة مجانية أولى. أعد نصًا فقط.`;
   const model=process.env.GEMINI_MODEL||'gemini-2.5-flash-lite';
-  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':process.env.GEMINI_API_KEY},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:.25,maxOutputTokens:1000}}),signal:AbortSignal.timeout(30000)});
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':process.env.GEMINI_API_KEY},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:.35,maxOutputTokens:1200}}),signal:AbortSignal.timeout(30000)});
   const d=await r.json();if(!r.ok){const error=new Error(`GEMINI_${r.status}:${d?.error?.message||'error'}`);error.status=r.status;throw error;}
   const summary=d?.candidates?.[0]?.content?.parts?.map(x=>x.text||'').join('').trim();if(!summary)throw new Error('VALIDATION:EMPTY_RESEARCH_RESULT');
-  return {summary,validated:true,evidence:[{kind:'AI_PROVIDER_RESPONSE',label:`Gemini ${model} response`,data:{provider:'Google Gemini',model,completedAt:new Date().toISOString(),grounded:false}}]};
+  return {summary,validated:true,evidence:[{kind:'AI_PROVIDER_RESPONSE',label:`Gemini ${model} response`,data:{provider:'Google Gemini',model,completedAt:new Date().toISOString(),grounded:false,employeeId:task.employee_id||null}}]};
 }};
 
 export const registry = new AdapterRegistry().register(projectExecutionAdapter).register(githubAdapter).register(marketAdapter).register(paperAdapter).register(companyAdapter).register(businessAdapter).register(researchAdapter);
