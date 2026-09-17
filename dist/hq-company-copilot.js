@@ -7,16 +7,30 @@ function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt
 function statusLabel(v){return({READY:'جاهز',IDLE:'جاهز',WORKING:'ينفذ الآن',RESEARCHING:'يبحث الآن',REVIEWING:'يراجع الآن',WAITING_FOR_CONNECTION:'ينتظر ربط أداة',WAITING_FOR_NAWAF:'ينتظر قرارك',BLOCKED_BY_TOOL:'المهمة تحتاج أداة',BLOCKED:'تعذر التنفيذ',PAUSED:'المهمة متوقفة',COMPLETED:'اكتمل'})[v]||v||'جاهز'}
 function busy(v){return ['WORKING','RESEARCHING','REVIEWING'].includes(v)}
 async function push(){try{if(window.HQCloudReady)await window.HQCloudReady;if(window.HQCloud?.push)await window.HQCloud.push()}catch{}}
+function healthLabel(level){return({online:'متصل بمحرك التنفيذ',degraded:'الخادم متصل — محرك AI غير مؤكد',offline:'الاتصال بمحرك التنفيذ غير متاح',checking:'جاري التحقق من الاتصال…'})[level]||'حالة الاتصال غير معروفة'}
+function setHealth(level){const el=document.getElementById('hq-copilot-live');if(!el)return;el.dataset.health=level;const span=el.querySelector('span');if(span)span.textContent=healthLabel(level)}
+let lastHealthAt=0;
+async function probeHealth(force=false){
+ const stamp=Date.now();if(!force&&stamp-lastHealthAt<15000)return;lastHealthAt=stamp;setHealth('checking');
+ try{
+  const opts={headers:{Accept:'application/json'},cache:'no-store'};if(window.AbortSignal?.timeout)opts.signal=window.AbortSignal.timeout(8000);
+  const r=await fetch('/api/health',opts),d=await r.json().catch(()=>null);
+  if(!r.ok||!d?.ok){setHealth('offline');return}
+  const engine=d.engine,engineReachable=Boolean(engine&&(engine.executionEngine||engine.gemini||engine.githubPrivateRepo||engine.openhands));
+  setHealth(engineReachable?'online':'degraded');
+ }catch{setHealth('offline')}
+}
 function ensureCopilot(){
  const main=document.querySelector('.v8-main'); if(!main)return null;
  let box=document.getElementById('hq-company-copilot');
  if(!box){
    box=document.createElement('section'); box.id='hq-company-copilot'; box.className='hq-copilot';
    const stats=main.querySelector('.v8-stats'); if(stats)main.insertBefore(box,stats); else main.prepend(box);
-   box.innerHTML=`<div class="hq-copilot-head"><div><span class="hq-copilot-kicker">LIVE COMPANY COPILOT</span><b>تكلم مع شركتك</b><small id="hq-copilot-sub">أمر واحد → موظف مناسب → تنفيذ حقيقي → نتيجة موثقة</small></div><div class="hq-copilot-live"><i></i><span>متصل بمحرك التنفيذ</span></div></div><div class="hq-copilot-command"><button type="button" id="hq-copilot-mic" class="hq-copilot-mic" aria-label="تحدث">🎙</button><textarea id="hq-copilot-input" rows="2" placeholder="مثال: فهد راجع مُعِين وحل أي خطأ مثبت، أو راكان حلل أرامكو"></textarea><button type="button" id="hq-copilot-send" class="hq-copilot-send">نفّذ</button></div><div class="hq-copilot-result"><div id="hq-copilot-state" class="hq-copilot-state">جاهز لاستقبال أمر جديد</div><div id="hq-copilot-task" class="hq-copilot-task"></div></div>`;
+   box.innerHTML=`<div class="hq-copilot-head"><div><span class="hq-copilot-kicker">LIVE COMPANY COPILOT</span><b>تكلم مع شركتك</b><small id="hq-copilot-sub">أمر واحد → موظف مناسب → تنفيذ حقيقي → نتيجة موثقة</small></div><div class="hq-copilot-live" id="hq-copilot-live" data-health="checking"><i></i><span>جاري التحقق من الاتصال…</span></div></div><div class="hq-copilot-command"><button type="button" id="hq-copilot-mic" class="hq-copilot-mic" aria-label="تحدث">🎙</button><textarea id="hq-copilot-input" rows="2" placeholder="مثال: فهد راجع مُعِين وحل أي خطأ مثبت، أو راكان حلل أرامكو"></textarea><button type="button" id="hq-copilot-send" class="hq-copilot-send">نفّذ</button></div><div class="hq-copilot-result"><div id="hq-copilot-state" class="hq-copilot-state">جاهز لاستقبال أمر جديد</div><div id="hq-copilot-task" class="hq-copilot-task"></div></div>`;
    box.querySelector('#hq-copilot-send').onclick=submit;
    box.querySelector('#hq-copilot-input').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();submit()}});
    box.querySelector('#hq-copilot-mic').onclick=listen;
+   probeHealth(true);
  }
  return box;
 }
@@ -43,7 +57,7 @@ async function submit(){
  state.activity.unshift({id:uid('a'),text:`نواف وجّه ${emp.name}: ${command}`,type:'REAL',at:ts,updatedAt:ts}); state.activity=state.activity.slice(0,150);
  write(state,'copilot-command'); await push(); input.value=''; show(`تم توجيه الأمر إلى ${emp.name} — يبدأ التنفيذ الآن`,task.id);
  if(window.NawafAgents?.runTask)setTimeout(()=>window.NawafAgents.runTask(task.id),180); else document.querySelector('[data-view="tasks"]')?.click();
- decorate();
+ decorate();probeHealth(true);
 }
 function show(text,taskId){const s=document.getElementById('hq-copilot-state'),t=document.getElementById('hq-copilot-task');if(s)s.textContent=text;if(t)t.dataset.taskId=taskId||''}
 function latestTask(state){return (state.tasks||[]).slice().sort((a,b)=>Date.parse(b.updatedAt||b.createdAt||0)-Date.parse(a.updatedAt||a.createdAt||0))[0]}
@@ -73,8 +87,9 @@ function listen(){
  recognition.start();
 }
 window.addEventListener('nawaf:state-updated',()=>setTimeout(refresh,60));window.addEventListener('storage',e=>{if(e.key===KEY)refresh()});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
-setInterval(()=>{ensureCopilot();refresh()},2500);
-setTimeout(refresh,350);
-window.NawafCompanyCopilot={submit,listen,refresh};
+window.addEventListener('online',()=>probeHealth(true));window.addEventListener('offline',()=>setHealth('offline'));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){refresh();probeHealth(true)}});
+setInterval(()=>{ensureCopilot();refresh();probeHealth()},2500);
+setTimeout(()=>{refresh();probeHealth(true)},350);
+window.NawafCompanyCopilot={submit,listen,refresh,probeHealth};
 })();
