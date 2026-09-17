@@ -27,7 +27,7 @@ export const db = {
 
 export async function snapshot() {
   const [employees,roles,projects,tasks,approvals,connections,briefs,activity,tools,account,positions,orders] = await Promise.all([
-    db.list('hq_v2_employees','order=name_en.asc'), db.list('hq_v2_roles','order=is_preset.desc,name.asc'), db.list('hq_v2_projects','order=created_at.asc'),
+    db.list('hq_v2_employees','archived_at=is.null&order=name_en.asc'), db.list('hq_v2_roles','order=is_preset.desc,name.asc'), db.list('hq_v2_projects','order=created_at.asc'),
     db.list('hq_v2_tasks','archived_at=is.null&order=created_at.desc&limit=100'), db.list('hq_v2_approvals','status=eq.PENDING&order=created_at.desc'),
     db.list('hq_v2_connection_requests','status=in.(PENDING,APPROVED)&order=created_at.desc'), db.list('hq_v2_secretary_briefs','order=created_at.desc&limit=20'),
     db.list('hq_v2_activity','order=created_at.desc&limit=30'), db.list('hq_v2_tool_connections','order=id.asc'),
