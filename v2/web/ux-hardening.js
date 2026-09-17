@@ -3,6 +3,7 @@
   const nativeFetch = window.fetch.bind(window);
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const retryableStatus = status => status === 408 || status === 425 || status === 429 || status >= 500;
+  let wasOffline = !navigator.onLine;
 
   window.fetch = async (input, init = {}) => {
     const method = String(init.method || 'GET').toUpperCase();
@@ -41,12 +42,16 @@
     else location.hash = route;
   };
   const updateNetworkState = () => {
-    if (!navigator.onLine) showBanner('الاتصال بالإنترنت منقطع — بياناتك محفوظة، وبنرجع نتصل تلقائيًا.', 'bad');
-    else {
-      showBanner('رجع الاتصال — جاري تحديث حالة الشركة…', 'good');
-      setTimeout(hideBanner, 1800);
-      window.dispatchEvent(new Event('hq:reconnect'));
+    if (!navigator.onLine) {
+      wasOffline = true;
+      showBanner('الاتصال بالإنترنت منقطع — بياناتك محفوظة، وبنرجع نتصل تلقائيًا.', 'bad');
+      return;
     }
+    showBanner('رجع الاتصال — جاري تحديث حالة الشركة…', 'good');
+    if (wasOffline) {
+      wasOffline = false;
+      setTimeout(() => location.reload(), 650);
+    } else setTimeout(hideBanner, 1800);
   };
   window.addEventListener('offline', updateNetworkState);
   window.addEventListener('online', updateNetworkState);
@@ -125,9 +130,6 @@
     mobileMenu.addEventListener('click', () => goRoute('command'));
   }
 
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && navigator.onLine) window.dispatchEvent(new Event('hq:reconnect'));
-  });
   window.addEventListener('unhandledrejection', event => {
     const message = String(event.reason?.message || event.reason || 'خطأ غير معروف');
     if (/fetch|network|HTTP_5|timeout/i.test(message)) showBanner('الاتصال بالخدمة تعثر مؤقتًا — جاري إعادة المحاولة تلقائيًا.', 'warn');
