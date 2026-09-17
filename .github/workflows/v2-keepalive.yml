@@ -1,0 +1,27 @@
+name: NAWAF HQ V2 Keep Alive
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping NAWAF HQ V2
+        run: |
+          curl --fail --silent --show-error --max-time 25 --retry 2 --retry-delay 3 \
+            https://nawaf-hq-v2.onrender.com/api/v2/health > /dev/null
+      - name: Ping agent runtime
+        run: |
+          curl --fail --silent --show-error --max-time 25 --retry 2 --retry-delay 3 \
+            https://nawaf-hq-crewai-runtime.onrender.com/health > /dev/null
+      - name: Ping AI backend
+        run: |
+          curl --fail --silent --show-error --max-time 25 --retry 2 --retry-delay 3 \
+            https://nawaf-hq-live-v2.onrender.com/health > /dev/null || true
