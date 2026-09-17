@@ -65,6 +65,7 @@
     noura:'الجودة والمراجعة',
     rakan:'التحليل المالي والنمو'
   };
+  const employeeIdByName = Object.fromEntries(Object.entries(employeeNames).map(([id,name])=>[name,id]));
 
   const ensureEmployeeDialog = () => {
     let dialog = document.querySelector('#employeeDialog');
@@ -100,6 +101,15 @@
       event.preventDefault();
       event.stopPropagation();
       openEmployee(employee.dataset.employee);
+      return;
+    }
+    const card = event.target.closest('.project');
+    const cardName = card?.querySelector('h3')?.textContent?.trim();
+    const employeeId = cardName && employeeIdByName[cardName];
+    if (employeeId) {
+      event.preventDefault();
+      event.stopPropagation();
+      openEmployee(employeeId);
       return;
     }
     const assign = event.target.closest('[data-assign-employee]');
