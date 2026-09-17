@@ -2,4 +2,11 @@ function send(res,status,body){res.statusCode=status;res.setHeader('Content-Type
 function base(){return String(process.env.SUPABASE_URL||'').replace(/\/$/,'')}
 function token(){return process.env.SUPABASE_SERVICE_ROLE_KEY||''}
 async function request(path,options={}){const r=await fetch(base()+'/rest/v1/'+path,{...options,headers:{apikey:token(),Authorization:'Bearer '+token(),'Content-Type':'application/json',...(options.headers||{})}});const t=await r.text();let d=null;try{d=t?JSON.parse(t):null}catch{d=t}if(!r.ok)throw new Error('BACKEND_'+r.status);return d}
-export default async function handler(req,res){if(!base()||!token())return send(res,503,{ok:false,error:'CLOUD_NOT_CONFIGURED'});try{if(req.method==='GET'){const rows=await request('hq_state?id=eq.main&select=data,updated_at');return send(res,200,{ok:true,state:rows?.[0]?.data||null,updatedAt:rows?.[0]?.updated_at||null})}if(req.method==='POST'){const body=typeof req.body==='string'?JSON.parse(req.body||'{}'):(req.body||{});if(!body.state||typeof body.state!=='object')return send(res,400,{ok:false,error:'INVALID_STATE'});const payload={id:'main',data:body.state,updated_at:new Date().toISOString()};await request('hq_state?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(payload)});return send(res,200,{ok:true,updatedAt:payload.updated_at})}return send(res,405,{ok:false,error:'METHOD_NOT_ALLOWED'})}catch(e){return send(res,500,{ok:false,error:'STATE_BACKEND_ERROR'})}}
+export default async function handler(req,res){
+ if(!base()||!token())return send(res,503,{ok:false,error:'CLOUD_NOT_CONFIGURED'});
+ try{
+  if(req.method==='GET'){const rows=await request('hq_state?id=eq.main&select=data,updated_at');return send(res,200,{ok:true,state:rows?.[0]?.data||null,updatedAt:rows?.[0]?.updated_at||null})}
+  if(req.method==='POST'){const body=typeof req.body==='string'?JSON.parse(req.body||'{}'):(req.body||{});if(!body.state||typeof body.state!=='object')return send(res,400,{ok:false,error:'INVALID_STATE'});const payload={id:'main',data:body.state,updated_at:new Date().toISOString()};await request('hq_state?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(payload)});return send(res,200,{ok:true,updatedAt:payload.updated_at})}
+  return send(res,405,{ok:false,error:'METHOD_NOT_ALLOWED'})
+ }catch(e){console.error(e?.message||e);return send(res,500,{ok:false,error:'STATE_BACKEND_ERROR'})}
+}
