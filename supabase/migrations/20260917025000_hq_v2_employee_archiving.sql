@@ -1,0 +1,2 @@
+alter table public.hq_v2_employees add column if not exists archived_at timestamptz;
+create index if not exists hq_v2_employees_archived_idx on public.hq_v2_employees(archived_at) where archived_at is null;
