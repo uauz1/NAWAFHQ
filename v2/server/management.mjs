@@ -152,7 +152,7 @@ export async function handleManagementApi({req,res,url,db,json,body,broadcast}){
   if(employeeMatch&&req.method==='PATCH'){
     const id=decodeURIComponent(employeeMatch[1]),employee=await db.one('hq_v2_employees',`id=eq.${encodeURIComponent(id)}&archived_at=is.null`);if(!employee){json(res,404,{ok:false,error:'EMPLOYEE_NOT_FOUND'});return true;}
     const b=await body(req),patch={updated_at:new Date().toISOString()};
-    if(b.name_ar!==undefined){const v=cleanText(b.name_ar,80);if(!v){json(res,400,{ok:false,error:'NAME_REQUIRED'});return true;}patch.name_ar=v;}
+    if(b.name_ar!==undefined){const v=cleanText(b.name_ar,80);if(!v){json(res,400,{ok:false,error:'NAME_REQUIRED'});return true;}const duplicate=await db.one('hq_v2_employees',`name_ar=eq.${encodeURIComponent(v)}&archived_at=is.null`);if(duplicate&&duplicate.id!==id){json(res,409,{ok:false,error:'EMPLOYEE_NAME_EXISTS'});return true;}patch.name_ar=v;}
     if(b.name_en!==undefined)patch.name_en=cleanText(b.name_en,80)||employee.name_en;
     if(b.role!==undefined){const v=cleanText(b.role,120);if(!v){json(res,400,{ok:false,error:'ROLE_REQUIRED'});return true;}patch.role=v;patch.role_source=b.role_source==='custom'?'custom':'preset';}
     if(b.department!==undefined)patch.department=cleanText(b.department,120)||'عام';
