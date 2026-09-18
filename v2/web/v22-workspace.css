@@ -32,3 +32,50 @@ main{padding:26px 28px 72px!important}.topbar{min-height:68px!important;margin-b
 @media(max-width:800px){main{padding:12px 12px 96px!important}.v4-hero{min-height:520px!important;border-radius:22px!important;background-position:62% center!important}.v4-hero-copy{padding:46px 22px 74px!important}.v4-hero h2{font-size:48px!important;max-width:92%!important}.v4-hero-copy>p{font-size:14px!important}.v22-scene-label{display:none}.v22-scenes{left:19px;bottom:20px}.v4-command-strip{grid-template-columns:1fr!important}.v4-kpis{grid-template-columns:repeat(2,1fr)!important}}
 @media(max-width:520px){.v4-hero{min-height:555px!important}.v4-hero h2{font-size:42px!important}.v4-kpi{min-height:96px!important;padding:13px!important}.v4-project-art{height:122px!important}}
 @media(prefers-reduced-motion:reduce){.v4-hero{transition:none!important}}
+/* V22.1 — blend image edges + tablet workspace */
+.v4-hero{
+  border:0!important;
+  border-radius:22px!important;
+  box-shadow:0 26px 80px rgba(0,0,0,.32),inset 0 0 0 1px rgba(255,255,255,.025)!important;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 2.5%,#000 97.5%,transparent 100%);
+  mask-image:linear-gradient(to bottom,transparent 0,#000 2.5%,#000 97.5%,transparent 100%)
+}
+.v4-hero:before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(5,9,15,.42),transparent 12%,transparent 88%,rgba(5,9,15,.42)),linear-gradient(0deg,rgba(5,9,15,.48),transparent 12%,transparent 90%,rgba(5,9,15,.28))}
+.v4-hero-copy,.v4-hero-meta,.v22-scene-label,.v22-scenes{z-index:3!important}
+.v4-project{overflow:hidden!important}
+.v4-project-art{border:0!important;border-radius:0!important;box-shadow:none!important}
+.v4-project-art:before{background:linear-gradient(180deg,rgba(3,8,14,.02),rgba(3,8,14,.18) 45%,rgba(3,8,14,.94))!important}
+.v4-project-body{position:relative;margin-top:-20px;padding-top:30px!important;background:linear-gradient(180deg,transparent,rgba(7,13,21,.94) 24%,rgba(7,13,21,.98))!important}
+.tool-status-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.tool-status{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px;border:1px solid var(--v22-line);border-radius:13px;background:rgba(255,255,255,.018)}
+.tool-status strong,.tool-status small{display:block}.tool-status small{margin-top:3px;color:var(--v22-muted);font-size:9px}
+.tool-scope{display:inline-flex;align-items:center;padding:5px 8px;border:1px solid rgba(var(--v22-accent-rgb),.18);border-radius:999px;background:rgba(var(--v22-accent-rgb),.07);color:var(--v22-accent);font-size:9px;white-space:nowrap}
+.finance-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.finance-command textarea{min-height:72px}.paper-order-form{display:grid;grid-template-columns:1fr .8fr 1fr auto;gap:10px;align-items:end}.paper-order-form label{min-width:0}.paper-order-form select{width:100%;padding:12px;border:1px solid var(--v22-line);border-radius:10px;background:#08121d;color:var(--v22-text)}
+@media(min-width:801px) and (max-width:1180px){
+  .shell{grid-template-columns:92px minmax(0,1fr)!important}
+  .sidebar{padding:18px 10px!important}
+  .sidebar .brand div,.sidebar nav .nav-btn{font-size:0!important}
+  .sidebar .brand{justify-content:center!important}
+  .sidebar nav{margin-top:24px!important}
+  .sidebar nav .nav-btn{justify-content:center!important;padding:10px!important;min-height:50px!important}
+  .sidebar nav .nav-btn:before{width:10px!important;height:10px!important;margin:0!important}
+  .sidebar-foot{display:none!important}
+  .rail{display:none!important}
+  main{padding:18px 20px 54px!important}
+  .topbar{min-height:62px!important}
+  .v4-hero{min-height:500px!important}
+  .v4-hero-copy{padding:54px 36px 52px!important}
+  .v4-hero h2{font-size:clamp(46px,6vw,68px)!important}
+  .v4-main-grid,.v4-lower-grid{grid-template-columns:1fr!important}
+  .v4-project-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .finance-grid{grid-template-columns:1fr!important}
+  .paper-order-form{grid-template-columns:1fr 1fr}
+  .paper-order-form .primary{min-height:44px}
+  .tool-status-grid{grid-template-columns:1fr}
+}
+@media(max-width:800px){
+  .v4-hero{-webkit-mask-image:none;mask-image:none}
+  .finance-grid{grid-template-columns:1fr}
+  .paper-order-form{grid-template-columns:1fr}
+  .tool-status-grid{grid-template-columns:1fr}
+}
