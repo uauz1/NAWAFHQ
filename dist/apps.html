@@ -9,8 +9,55 @@
   <link rel="stylesheet" href="hq-app-integrations.css" />
   <link rel="stylesheet" href="hq-icons-v10.css?v=20260915-v10-1" />
   <style>
-    body{background:#07090d;color:#f4f6fb;min-height:100vh}.apps-page{max-width:1180px;margin:0 auto;padding:24px}.apps-page-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}.apps-page-top h1{margin:0 0 5px}.apps-page-top p{margin:0;color:#8792a5}.apps-back{display:inline-flex;align-items:center;min-height:42px;padding:0 14px;border:1px solid #ffffff16;border-radius:12px;color:#eef2f8;text-decoration:none;background:#0d1420}.apps-page .connected-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.apps-command{margin-top:18px}.apps-command textarea,.apps-command select{width:100%;background:#0b111b;border:1px solid #ffffff18;color:#fff;border-radius:11px;padding:10px;font:inherit}.apps-command-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.apps-command-grid label{display:flex;flex-direction:column;gap:6px;color:#a8b2c3;font-size:11px}.apps-command-grid .full{grid-column:1/-1}.apps-output{margin-top:14px;padding:12px;border:1px solid #ffffff12;border-radius:12px;background:#0b111b;color:#b8c2d0;font-size:12px;line-height:1.8}.apps-history{margin-top:18px}.apps-history .control-row{padding:12px 0}@media(max-width:760px){.apps-page{padding:14px}.apps-page-top{align-items:flex-start;flex-direction:column}.apps-page .connected-grid{grid-template-columns:1fr}.apps-command-grid{grid-template-columns:1fr}.apps-command-grid .full{grid-column:auto}}
-  </style>
+:root{--bg:#05070b;--panel:rgba(13,18,27,.82);--panel2:rgba(18,24,35,.72);--line:rgba(255,255,255,.08);--text:#f5f7fb;--muted:#8e99aa;--gold:#d9ad5b;--gold2:#f2ca77}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:
+radial-gradient(1200px 700px at 78% -10%,rgba(53,78,123,.22),transparent 58%),
+radial-gradient(900px 600px at 8% 18%,rgba(168,117,44,.11),transparent 55%),
+linear-gradient(180deg,#080b10 0%,#05070b 68%,#040609 100%);color:var(--text);font-family:inherit}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.35),transparent 72%)}
+.apps-page{width:min(1440px,calc(100% - 48px));margin:auto;padding:34px 0 70px;position:relative;z-index:1}
+.apps-page-top{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:26px;padding:0 2px}
+.apps-page-top h1{font-size:34px;line-height:1.1;margin:0 0 9px;letter-spacing:-.6px}
+.apps-page-top p{margin:0;color:var(--muted);font-size:14px}
+.apps-back{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:14px;color:#eef2f8;text-decoration:none;background:rgba(16,22,32,.78);backdrop-filter:blur(16px);box-shadow:0 10px 35px rgba(0,0,0,.22);transition:.2s}
+.apps-back:hover{transform:translateY(-1px);border-color:rgba(217,173,91,.36);background:rgba(22,28,40,.92)}
+.connected-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:18px}
+.connected-app{position:relative;overflow:hidden;min-height:300px;border:1px solid var(--line)!important;border-radius:22px!important;background:linear-gradient(145deg,rgba(15,21,31,.94),rgba(8,12,18,.9))!important;padding:20px!important;box-shadow:0 22px 70px rgba(0,0,0,.28);backdrop-filter:blur(18px)}
+.connected-app:before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,transparent,var(--app-accent),transparent);opacity:.95}
+.connected-app:after{content:"";position:absolute;width:240px;height:240px;border-radius:50%;inset:-110px auto auto -90px;background:var(--app-accent);filter:blur(85px);opacity:.10;pointer-events:none}
+.connected-app-head{display:grid!important;grid-template-columns:52px 1fr auto;align-items:start!important;gap:14px!important;position:relative;z-index:1}
+.app-mark{width:52px!important;height:52px!important;border-radius:16px!important;display:grid!important;place-items:center!important;font-size:20px!important;font-weight:800;background:linear-gradient(145deg,rgba(255,255,255,.10),rgba(255,255,255,.03))!important;border:1px solid rgba(255,255,255,.10)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02)}
+.connected-app-head h3{font-size:22px!important;margin:2px 0 6px!important}
+.connected-app-head p{font-size:12px!important;line-height:1.8!important;color:var(--muted)!important;margin:0!important;max-width:520px}
+.app-live{align-self:start!important;padding:6px 10px!important;border:1px solid rgba(63,197,122,.22)!important;background:rgba(38,145,88,.10)!important;color:#78dda4!important;border-radius:999px!important;font-size:10px!important}
+.connected-app-meta{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px!important;margin-top:15px!important}
+.connected-app-meta span{display:flex!important;flex-direction:column!important;gap:6px!important;min-height:61px;padding:11px 12px!important;border:1px solid rgba(255,255,255,.06)!important;border-radius:13px!important;background:rgba(255,255,255,.025)!important;color:#818da0!important;font-size:10px!important}
+.connected-app-meta b{color:#eef2f8!important;font-size:12px!important}
+.connected-app-actions{display:grid!important;grid-template-columns:1.25fr 1.15fr .8fr .8fr;gap:8px!important;margin-top:15px!important}
+.connected-app-actions a,.connected-app-actions button{min-height:40px!important;border-radius:11px!important;border:1px solid rgba(255,255,255,.08)!important;background:rgba(255,255,255,.035)!important;color:#dfe5ee!important;text-decoration:none!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:0 10px!important;font:inherit!important;font-size:11px!important;cursor:pointer;transition:.18s}
+.connected-app-actions a:hover,.connected-app-actions button:hover{transform:translateY(-1px);background:rgba(255,255,255,.065)!important}
+.connected-app-actions .primary{background:linear-gradient(135deg,var(--gold2),#b88637)!important;color:#18130b!important;border-color:rgba(231,190,108,.58)!important;font-weight:800!important}
+.workspace.card{border:1px solid var(--line)!important;border-radius:22px!important;background:linear-gradient(145deg,rgba(15,21,31,.90),rgba(8,12,18,.86))!important;box-shadow:0 22px 70px rgba(0,0,0,.24)!important;padding:20px!important}
+.apps-command{margin-top:18px}
+.workspace-head{margin-bottom:16px}
+.workspace-head h2{margin:0 0 5px!important;font-size:19px!important}
+.connected-sub{margin:0!important;color:var(--muted)!important;font-size:12px!important}
+.apps-command-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.apps-command-grid label{display:flex;flex-direction:column;gap:7px;color:#9aa5b5;font-size:11px}
+.apps-command-grid .full{grid-column:1/-1}
+.apps-command textarea,.apps-command select{width:100%;background:rgba(7,11,17,.88)!important;border:1px solid rgba(255,255,255,.08)!important;color:#f4f6fa!important;border-radius:12px!important;padding:12px!important;font:inherit!important;outline:none}
+.apps-command textarea:focus,.apps-command select:focus{border-color:rgba(217,173,91,.5)!important;box-shadow:0 0 0 3px rgba(217,173,91,.07)}
+.apps-command button.primary{min-height:44px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--gold2),#b88637);color:#18130b;font-weight:900;cursor:pointer}
+.apps-output{margin-top:14px;padding:13px 14px!important;border:1px solid rgba(255,255,255,.06)!important;border-radius:13px!important;background:rgba(5,9,14,.58)!important;color:#aeb8c7!important;font-size:11px!important;line-height:1.8!important}
+.apps-history{margin-top:18px}
+.apps-history .control-row{padding:13px 4px!important;border-bottom:1px solid rgba(255,255,255,.05)!important}
+.apps-history .control-row:last-child{border-bottom:0!important}
+.muted{color:var(--muted)!important}
+@media(max-width:980px){.connected-grid{grid-template-columns:1fr!important}.connected-app-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.apps-page{width:min(100% - 24px,1440px);padding:18px 0 44px}.apps-page-top{align-items:flex-start;flex-direction:column}.apps-page-top h1{font-size:28px}.apps-command-grid{grid-template-columns:1fr}.apps-command-grid .full{grid-column:auto}.connected-app{padding:16px!important}.connected-app-head{grid-template-columns:46px 1fr}.app-live{grid-column:1/-1;width:max-content}.connected-app-meta{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:500px){.connected-app-actions{grid-template-columns:1fr 1fr}.connected-app-meta{grid-template-columns:1fr 1fr}.connected-app-meta span:last-child:nth-child(3n){grid-column:auto}}
+</style>
 </head>
 <body>
   <main class="apps-page">
@@ -19,7 +66,7 @@
     <section class="workspace card apps-command"><div class="workspace-head"><div><h2>توجيه موظف</h2><p class="connected-sub">طلبات التعديل والإصلاح والإضافة تُرسل لمحرك التنفيذ الحقيقي للمشروع.</p></div></div><form id="command-form" class="apps-command-grid"><label>التطبيق<select name="projectId" id="project-select"></select></label><label>الموظف<select name="employeeId" id="employee-select"></select></label><label class="full">وش تبغاه يسوي؟<textarea name="command" rows="4" required placeholder="مثال: افتح مشروع قدّها، أصلح مشكلة اللعبة التي لا تفتح، اختبرها ثم طبّق التعديل"></textarea></label><label>الحالة<select name="status"><option value="READY">نفّذ الآن</option><option value="RESEARCHING">بحث ومراجعة</option><option value="REVIEWING">فحص وجودة</option></select></label><div style="display:flex;align-items:end"><button class="primary" style="width:100%" type="submit">إرسال وبدء التنفيذ</button></div></form><div class="apps-output" id="command-output">جاهز لاستقبال توجيهك.</div></section>
     <section class="workspace card apps-history"><div class="workspace-head"><h2>آخر المهام المرتبطة بالتطبيقات</h2></div><div id="apps-history"></div></section>
   </main>
-  <script src="hq-apps-page.js?v=20260915-real-1"></script>
+  <script src="hq-apps-page.js?v=20260918-premium-apps-1"></script>
   <script src="hq-project-executor.js?v=20260915-permissions-1"></script>
   <script src="hq-icons-v10.js?v=20260915-v10-1"></script>
   <script>setInterval(function(){window.NawafProjectExecutor&&window.NawafProjectExecutor.scan&&window.NawafProjectExecutor.scan()},1500)</script>
