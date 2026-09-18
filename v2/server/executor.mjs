@@ -13,10 +13,57 @@ async function event(taskId,stage,message,metadata={}) { await db.insert('hq_v2_
 async function setTask(task,to,extra={}) { assertTransition(task.status,to); const rows=await db.update('hq_v2_tasks',`id=eq.${task.id}`,{status:to,updated_at:new Date().toISOString(),...extra}); Object.assign(task,rows[0]); await event(task.id,to,extra.message||to); }
 async function releaseEmployee(task,status='READY') { if(task.employee_id)await db.update('hq_v2_employees',`id=eq.${task.employee_id}`,{status,current_task_id:null,last_active_at:new Date().toISOString(),updated_at:new Date().toISOString()},false); }
 
-async function resolveEmployee(command,fallback){
-  const text=normalizeText(command);const employees=await db.list('hq_v2_employees','order=created_at.asc');
+function routeHints(route){
+  return {
+    GENERAL:['تنفيذي','اداره','ادارة','تنسيق','مساعد','سكرتير','عمليات'],
+    PROJECT_STATUS:['اداره','ادارة','مشروع','متابعه','متابعة','تقارير','تنفيذي'],
+    PROJECT_EXECUTION:['برمجه','برمجة','تطوير','هندسه','هندسة','كود','github','deploy','frontend','backend'],
+    RESEARCH:['بحث','باحث','تحليل','استراتيجي','معلومات'],
+    QA:['جوده','جودة','اختبار','qa','test','مراجعه','مراجعة'],
+    DESIGN:['تصميم','ui','ux','واجهه','واجهة','تجربه','تجربة'],
+    BUSINESS:['نمو','اعمال','أعمال','تجاري','ايرادات','إيرادات','تسعير','استراتيجي'],
+    FINANCE_ANALYSIS:['مالي','ماليه','مالية','اسهم','أسهم','استثمار','تحليل مالي'],
+    TRADING_PAPER:['مالي','ماليه','مالية','تداول','اسهم','أسهم','محفظه','محفظة']
+  }[route]||[];
+}
+function employeeScore(employee,text,route){
+  const fields=[
+    employee.role,employee.department,employee.custom_instructions,
+    ...(employee.expertise||[]),...(employee.permissions||[]),...(employee.preferred_tools||[])
+  ].map(normalizeText).filter(Boolean);
+  const haystack=fields.join(' ');
+  let score=0;
+  for(const hint of routeHints(route))if(haystack.includes(normalizeText(hint)))score+=4;
+  for(const token of text.split(' ').filter(x=>x.length>3))if(haystack.includes(token))score+=1;
+  if(employee.status==='READY')score+=1;
+  if(employee.current_task_id)score-=3;
+  return score;
+}
+async function resolveEmployee(command,fallback,route='GENERAL'){
+  const text=normalizeText(command);const employees=await db.list('hq_v2_employees','archived_at=is.null&order=created_at.asc');
   const explicit=employees.find(e=>[e.name_ar,e.name_en].filter(Boolean).some(name=>text.includes(normalizeText(name))));
-  return explicit?.id||fallback;
+  if(explicit)return {id:explicit.id,reason:'EXPLICIT_NAME',score:999};
+  const ranked=employees.map(e=>({employee:e,score:employeeScore(e,text,route)})).sort((a,b)=>b.score-a.score);
+  const best=ranked[0];
+  if(best&&best.score>0)return {id:best.employee.id,reason:'PROFILE_MATCH',score:best.score};
+  return {id:fallback,reason:'ROUTE_DEFAULT',score:0};
+}
+
+async function buildExecutiveBrief(task,result,employee,parsed){
+  const evidenceCount=Array.isArray(result?.evidence)?result.evidence.length:0;
+  const summary=String(result?.summary||'').trim();
+  const shortSummary=summary.length>900?summary.slice(0,900)+'…':summary;
+  const project=task.project_id?await db.one('hq_v2_projects',`id=eq.${encodeURIComponent(task.project_id)}`):null;
+  const status=result?.validated===false?'يحتاج مراجعة':'مكتمل وموثق';
+  return [
+    `الحالة: ${status}`,
+    `الموظف: ${employee?.name_ar||task.employee_id||'غير محدد'}${employee?.role?` — ${employee.role}`:''}`,
+    `المشروع: ${project?.name_ar||task.project_id||'الشركة'}`,
+    `المسار: ${parsed.route}`,
+    `الأدلة: ${evidenceCount}`,
+    '',
+    shortSummary
+  ].join('\n');
 }
 
 async function employeeContext(task){
@@ -61,9 +108,11 @@ export async function createTask(command,idempotencyKey) {
   const route=parseCommand(command), title=String(command).trim().slice(0,140);
   const existing=idempotencyKey?await db.one('hq_v2_tasks',`idempotency_key=eq.${encodeURIComponent(idempotencyKey)}`):null;
   if(existing)return existing;
-  const employeeId=await resolveEmployee(command,route.employeeId);
-  const [task]=await db.insert('hq_v2_tasks',{command,title,route:route.route,status:'QUEUED',employee_id:employeeId,project_id:route.projectId,idempotency_key:idempotencyKey||null});
-  await event(task.id,'RECEIVED','تم استلام الأمر',{route:{...route,employeeId}}); return task;
+  const assignment=await resolveEmployee(command,route.employeeId,route.route);
+  const [task]=await db.insert('hq_v2_tasks',{command,title,route:route.route,status:'QUEUED',employee_id:assignment.id,project_id:route.projectId,idempotency_key:idempotencyKey||null});
+  await event(task.id,'RECEIVED','تم استلام الأمر',{route:{...route,employeeId:assignment.id,assignmentReason:assignment.reason,assignmentScore:assignment.score}});
+  await event(task.id,'EMPLOYEE_ASSIGNED',`تم توجيه المهمة إلى ${assignment.id}`,{reason:assignment.reason,score:assignment.score,route:route.route});
+  return task;
 }
 
 export async function executeTask(taskId) {
@@ -85,8 +134,10 @@ export async function executeTask(taskId) {
     for(const item of result.evidence)await db.insert('hq_v2_task_evidence',{task_id:task.id,kind:item.kind,label:item.label,uri:item.uri||null,data:item.data||{}},false);
     if(result.validated===false){await setTask(task,'BLOCKED',{result,error_class:'VALIDATION_FAILURE',error_message:result.summary,completed_at:new Date().toISOString()});await db.insert('hq_v2_secretary_briefs',{task_id:task.id,title:`لم يثبت الاكتمال: ${task.title}`,body:result.summary,severity:'WARNING'},false);await releaseEmployee(task);return task;}
     await setTask(task,'COMPLETED',{result,completed_at:new Date().toISOString(),error_class:null,error_message:null,retry_count:task.retry_count||0,next_retry_at:null});
+    const assignedEmployee=task.employee_id?await db.one('hq_v2_employees',`id=eq.${encodeURIComponent(task.employee_id)}`):null;
+    const executiveBrief=await buildExecutiveBrief(task,result,assignedEmployee,parsed);
     await db.insert('hq_v2_reports',{type:parsed.route,title:task.title,summary:result.summary,author_employee_id:task.employee_id,source_task_id:task.id,project_id:task.project_id,evidence:result.evidence},false);
-    await db.insert('hq_v2_secretary_briefs',{task_id:task.id,title:`اكتملت: ${task.title}`,body:result.summary,severity:'SUCCESS'},false);
+    await db.insert('hq_v2_secretary_briefs',{task_id:task.id,title:`سارة: اكتملت ${task.title}`,body:executiveBrief,severity:'SUCCESS'},false);
     await db.insert('hq_v2_activity',{task_id:task.id,employee_id:task.employee_id,project_id:task.project_id,kind:'TASK_COMPLETED',message:result.summary},false);
     await releaseEmployee(task); return task;
   } catch(error) {
