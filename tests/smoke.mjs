@@ -58,6 +58,7 @@ for(const financeFeature of ['watchlist','finance-watchlist','قائمة الم�
 if(!cloud.includes('finance')||!cloud.includes('watchlist'))throw new Error('Finance watchlist is not included in client cloud sync');
 if(!stateCloud.includes('finance')||!stateCloud.includes('watchlist'))throw new Error('Finance watchlist is not included in server cloud merge');
 for(const wfFeature of ['workflowId','goalId','workflowStage','dependsOn'])if(!companyOs.includes(wfFeature))throw new Error(`Missing company goal workflow metadata ${wfFeature}`);
+if(!companyOs.includes("t=>t.goalId===g.id"))throw new Error('Goal progress is not scoped to exact workflow tasks');
 if(!server.includes('depsDone(state,t)'))throw new Error('Worker does not enforce workflow dependencies');
 if(!server.includes("t.status==='READY'&&depsDone(state,t)"))throw new Error('Background worker may select dependency-blocked tasks');
 if(!companyOsV23Css.trim())throw new Error('V23 stylesheet empty');
