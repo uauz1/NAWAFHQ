@@ -1,44 +1,14 @@
 (function(){'use strict';
-const modalSelectors=['#v8-modal','#v23-modal','#v24-modal'];
-let lastFocus=null;
+const modalSelectors=['#v8-modal','#v23-modal','#v24-modal'];let lastFocus=null,lockY=0,locked=false;
 function visibleModal(){return modalSelectors.map(s=>document.querySelector(s)).find(m=>m&&m.classList.contains('show'))||null}
-function syncViewport(){
-  const vv=window.visualViewport;
-  document.documentElement.style.setProperty('--hq-vv-height',Math.max(320,Math.round(vv?.height||window.innerHeight))+'px');
-}
-function syncModalState(){
-  const m=visibleModal();
-  document.body.classList.toggle('hq-form-open',!!m);
-  if(m){
-    m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');
-    if(!lastFocus)lastFocus=document.activeElement;
-  }else if(lastFocus){
-    const f=lastFocus;lastFocus=null;
-    if(f&&document.contains(f)&&typeof f.focus==='function')setTimeout(()=>f.focus({preventScroll:true}),0);
-  }
-}
-syncViewport();
-window.addEventListener('resize',syncViewport,{passive:true});
-window.visualViewport?.addEventListener('resize',syncViewport,{passive:true});
-window.visualViewport?.addEventListener('scroll',syncViewport,{passive:true});
+function syncViewport(){const vv=window.visualViewport;document.documentElement.style.setProperty('--hq-vv-height',Math.max(320,Math.round(vv?.height||window.innerHeight))+'px')}
+function lock(){if(locked)return;lockY=window.scrollY||document.documentElement.scrollTop||0;locked=true;document.documentElement.classList.add('hq-form-open');document.body.classList.add('hq-form-open');document.body.style.top=(-lockY)+'px'}
+function unlock(){if(!locked)return;locked=false;document.documentElement.classList.remove('hq-form-open');document.body.classList.remove('hq-form-open');document.body.style.top='';window.scrollTo({top:lockY,left:0,behavior:'instant'})}
+function syncModalState(){const m=visibleModal();if(m){lock();m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');if(!lastFocus)lastFocus=document.activeElement}else{unlock();if(lastFocus){const f=lastFocus;lastFocus=null;if(f&&document.contains(f)&&typeof f.focus==='function')setTimeout(()=>f.focus({preventScroll:true}),0)}}}
+syncViewport();window.addEventListener('resize',syncViewport,{passive:true});window.visualViewport?.addEventListener('resize',syncViewport,{passive:true});
 new MutationObserver(syncModalState).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['class'],childList:true});
-document.addEventListener('submit',function(e){
-  const form=e.target;
-  if(!(form instanceof HTMLFormElement)||!form.closest('#v8-modal,#v23-modal,#v24-modal'))return;
-  const btn=e.submitter||form.querySelector('button[type="submit"],button:not([type])');
-  if(btn?.dataset.hqSubmitting==='1'){e.preventDefault();e.stopImmediatePropagation();return}
-  if(btn){btn.dataset.hqSubmitting='1';btn.dataset.hqOriginalText=btn.textContent||'';btn.disabled=true;btn.textContent='جاري التنفيذ…'}
-  setTimeout(()=>{if(btn&&document.contains(btn)){btn.disabled=false;delete btn.dataset.hqSubmitting;if(btn.dataset.hqOriginalText)btn.textContent=btn.dataset.hqOriginalText;delete btn.dataset.hqOriginalText}},3500);
-},true);
-document.addEventListener('keydown',function(e){
-  if(e.key!=='Escape')return;const m=visibleModal();if(!m)return;
-  const close=m.querySelector('[data-close],[data-v24-close],header button,.v8-close');
-  if(close){e.preventDefault();close.click()}
-},true);
-document.addEventListener('click',function(e){
-  const trigger=e.target.closest('[data-action="new-task"],[data-action="company-command"],[data-smart-command],[data-v8-command],[data-v24-page="tasks"]');
-  if(trigger)setTimeout(()=>{syncViewport();syncModalState()},0);
-},true);
-window.addEventListener('pageshow',()=>{syncViewport();syncModalState()});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){syncViewport();syncModalState()}});
+document.addEventListener('focusin',e=>{const m=visibleModal();if(!m||!m.contains(e.target))return;requestAnimationFrame(()=>{const d=m.querySelector('.v8-dialog,.v23-dialog,.v24-dialog');if(d&&e.target.scrollIntoView)e.target.scrollIntoView({block:'nearest',inline:'nearest'})})},true);
+document.addEventListener('submit',function(e){const form=e.target;if(!(form instanceof HTMLFormElement)||!form.closest('#v8-modal,#v23-modal,#v24-modal'))return;const btn=e.submitter||form.querySelector('button[type="submit"],button:not([type])');if(btn?.dataset.hqSubmitting==='1'){e.preventDefault();e.stopImmediatePropagation();return}if(btn){btn.dataset.hqSubmitting='1';btn.dataset.hqOriginalText=btn.textContent||'';btn.disabled=true;btn.textContent='جاري التنفيذ…'}setTimeout(()=>{if(btn&&document.contains(btn)){btn.disabled=false;delete btn.dataset.hqSubmitting;if(btn.dataset.hqOriginalText)btn.textContent=btn.dataset.hqOriginalText;delete btn.dataset.hqOriginalText}},3500)},true);
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const m=visibleModal();if(!m)return;const close=m.querySelector('[data-close],[data-v24-close],header button,.v8-close');if(close){e.preventDefault();close.click()}},true);
+window.addEventListener('pageshow',()=>{syncViewport();syncModalState()});document.addEventListener('visibilitychange',()=>{if(!document.hidden){syncViewport();syncModalState()}});
 })();
