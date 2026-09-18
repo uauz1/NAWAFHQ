@@ -1,0 +1,42 @@
+/* NAWAF HQ V20 — lightweight production polish */
+:root{--v20-glow:rgba(200,167,92,.12);--v20-line:rgba(239,217,158,.12);--v20-panel:rgba(17,19,21,.86)}
+html{scrollbar-gutter:stable}
+body{background:
+  radial-gradient(circle at 75% -15%,rgba(200,167,92,.12),transparent 30%),
+  radial-gradient(circle at 15% 15%,rgba(108,164,217,.055),transparent 28%),
+  var(--bg)!important}
+.sidebar,.rail,.mobile-head,.bottom-nav{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.topbar{position:sticky;top:0;z-index:12;padding:10px 0;background:linear-gradient(180deg,rgba(9,10,11,.96),rgba(9,10,11,.72) 72%,transparent);backdrop-filter:blur(12px)}
+.hero{position:relative;overflow:hidden;background:
+  radial-gradient(circle at 84% 18%,rgba(239,217,158,.12),transparent 23%),
+  linear-gradient(145deg,rgba(28,24,18,.96),rgba(13,16,20,.96) 58%,rgba(10,13,17,.98))!important}
+.hero:after{content:"";position:absolute;inset:auto -8% -55% 40%;height:220px;border-radius:50%;background:radial-gradient(circle,var(--v20-glow),transparent 68%);pointer-events:none}
+.hero>*{position:relative;z-index:1}
+.command-box{transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.command-box:focus-within{border-color:rgba(239,217,158,.6);box-shadow:0 0 0 3px rgba(200,167,92,.08),0 16px 44px rgba(0,0,0,.22);transform:translateY(-1px)}
+.metric,.section-card,.project,.employee,.task,.panel{box-shadow:inset 0 1px rgba(255,255,255,.025)}
+.project,.employee,.task,.section-card{transition:border-color .16s ease,transform .16s ease,background .16s ease}
+.project:hover,.employee:hover,.task:hover{transform:translateY(-1px);border-color:rgba(200,167,92,.28)}
+.task-list>.task,.project-grid>.project,.employee-grid>.employee{content-visibility:auto;contain-intrinsic-size:90px}
+.table-wrap tbody tr{content-visibility:auto;contain-intrinsic-size:48px}
+.primary,.link-btn,.icon-btn,.text-btn,.nav-btn{-webkit-tap-highlight-color:transparent}
+.primary:focus-visible,.link-btn:focus-visible,.icon-btn:focus-visible,.text-btn:focus-visible,.nav-btn:focus-visible,.task:focus-visible,.employee:focus-visible,.project:focus-visible{outline:2px solid rgba(239,217,158,.65);outline-offset:2px}
+.v20-shortcut{display:inline-flex;align-items:center;gap:6px;margin-top:10px;color:var(--muted);font-size:10px}
+.v20-shortcut kbd{border:1px solid var(--line);border-bottom-color:#4a4d50;background:#0b0d0f;border-radius:6px;padding:2px 6px;color:var(--gold2);font:600 9px ui-monospace,SFMono-Regular,Consolas,monospace}
+.hq-background-paused *{animation-play-state:paused!important}
+@media(max-width:800px){
+  .topbar{top:61px;padding-top:7px}
+  .hero{border-radius:20px}
+  .metrics{gap:9px}
+  .metric{padding:14px}
+  .metric strong{font-size:23px}
+  .project-actions{flex-wrap:wrap}
+  .project-actions>*{min-height:40px;display:inline-flex;align-items:center;justify-content:center}
+}
+@media(max-width:520px){
+  .topbar{position:static;background:none;backdrop-filter:none}
+  .hero{padding:18px}
+  .section-card{padding:15px}
+  .task{padding:12px}
+}
+@media(prefers-reduced-motion:reduce){.project,.employee,.task,.section-card,.command-box{transition:none!important;transform:none!important}}
