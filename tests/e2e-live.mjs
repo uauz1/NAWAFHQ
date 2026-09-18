@@ -11,7 +11,7 @@ await step('open-production',open);
 if(!await page.locator('[data-view="dashboard"]').count())throw new Error('dashboard nav missing');
 
 // Every main view must activate.
-for(const v of ['workforce','projects','tasks','reports','dashboard']){await page.locator(`[data-view="${v}"]`).first().click();await page.waitForTimeout(250);if(!await page.locator(`[data-view="${v}"].active`).count())throw new Error(`view ${v} did not activate`)}
+for(const v of ['workforce','projects','tasks','reports','dashboard']){await step(`view-${v}`,async()=>{await page.locator(`[data-view="${v}"]`).first().click();await page.waitForTimeout(250);if(!await page.locator(`[data-view="${v}"].active`).count())throw new Error(`view ${v} did not activate`)})}
 
 // Every employee card must open and close cleanly.
 await page.locator('[data-view="workforce"]').first().click();await page.waitForTimeout(250);
@@ -66,8 +66,8 @@ await page.locator('.mobile-apps-link').click();await page.waitForURL('**/apps.h
 // Server APIs must be healthy and expose a valid cloud task collection.
 const health=await page.evaluate(async()=>{const r=await fetch('/api/health',{cache:'no-store'});return {status:r.status,json:await r.json().catch(()=>null)}});
 const state=await page.evaluate(async()=>{const r=await fetch('/api/state',{cache:'no-store'});return {status:r.status,json:await r.json().catch(()=>null)}});
-if(health.status!==200||!health.json?.ok)throw new Error(`health API failed: ${JSON.stringify(health)}`);
-if(state.status!==200||!state.json?.ok)throw new Error(`state API failed: ${JSON.stringify(state)}`);
+if(health.status!==200||!health.json?.ok)throw new Error(`[E2E:health-api] health API failed: ${JSON.stringify(health)}`);
+if(state.status!==200||!state.json?.ok)throw new Error(`[E2E:state-api] state API failed: ${JSON.stringify(state)}`);
 const cloudTasks=state.json?.state?.tasks||state.json?.data?.tasks||state.json?.tasks||[];
 if(!Array.isArray(cloudTasks))throw new Error('cloud task collection is invalid');
 const cloudCount=cloudTasks.length;
@@ -79,7 +79,7 @@ if(!await page.locator('[data-action="new-task"]').count())throw new Error('task
 // Mobile sanity: no major horizontal overflow and navigation stays accessible.
 await page.setViewportSize({width:390,height:844});await page.reload({waitUntil:'domcontentloaded',timeout:120000});await page.waitForSelector('#app .v8',{timeout:30000});
 const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
-if(overflow>16)throw new Error(`mobile horizontal overflow detected: ${overflow}px`);
+if(overflow>16)throw new Error(`[E2E:mobile-overflow] mobile horizontal overflow detected: ${overflow}px`);
 if(!await page.locator('[data-view="dashboard"]').count())throw new Error('mobile navigation unavailable');
 
 if(errors.length)throw new Error(`[E2E:page-errors] ${errors.join(' | ')}`);
