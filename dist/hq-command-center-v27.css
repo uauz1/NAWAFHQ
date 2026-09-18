@@ -1,0 +1,8 @@
+/* V27 command center reliability — preserve approved visual design */
+#smart-command-modal.show{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;z-index:2147483200!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;padding:24px!important;box-sizing:border-box!important}
+#smart-command-modal .v8-dialog{position:relative!important;inset:auto!important;transform:none!important;width:min(760px,calc(100vw - 48px))!important;max-width:760px!important;max-height:calc(100dvh - 48px)!important;margin:0!important;overflow:auto!important;overscroll-behavior:contain!important;scrollbar-gutter:stable;box-sizing:border-box!important}
+#smart-command-modal .v8-form{min-width:0!important}
+#smart-command-modal textarea{resize:vertical!important;min-height:132px!important;max-height:38vh!important}
+#smart-command-modal input,#smart-command-modal textarea,#smart-command-modal select{max-width:100%!important;box-sizing:border-box!important}
+body.hq-smart-command-open{overflow:hidden!important}
+@media(max-width:820px){#smart-command-modal.show{padding:10px!important;align-items:flex-start!important}#smart-command-modal .v8-dialog{width:100%!important;max-height:calc(100dvh - 20px)!important}.v8-form{grid-template-columns:minmax(0,1fr)!important}#smart-command-modal textarea{font-size:16px!important;min-height:150px!important}}
