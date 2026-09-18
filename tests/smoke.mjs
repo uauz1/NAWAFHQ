@@ -59,6 +59,8 @@ if(!cloud.includes('finance')||!cloud.includes('watchlist'))throw new Error('Fin
 if(!stateCloud.includes('finance')||!stateCloud.includes('watchlist'))throw new Error('Finance watchlist is not included in server cloud merge');
 for(const wfFeature of ['workflowId','goalId','workflowStage','dependsOn'])if(!companyOs.includes(wfFeature))throw new Error(`Missing company goal workflow metadata ${wfFeature}`);
 if(!companyOs.includes("t=>t.goalId===g.id"))throw new Error('Goal progress is not scoped to exact workflow tasks');
+if(!projectExecutor.includes('appliedVerified=applied&&Boolean(applyCommit)'))throw new Error('Project apply path does not require commit evidence');
+if(!projectExecutor.includes('applyEvidence:appliedVerified?{commitSha:applyCommit}:null'))throw new Error('Project apply path does not expose commit evidence');
 if(!server.includes("Proposal verified only; changes are not proven applied to repository."))throw new Error('Project executor may claim unapplied proposals as complete');
 if(!server.includes("if(changed){"))throw new Error('Project executor missing changed-proposal completion guard');
 if(!server.includes('depsDone(state,t)'))throw new Error('Worker does not enforce workflow dependencies');
