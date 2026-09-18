@@ -1,0 +1,1 @@
+@echo off\r\ntitle NAV Windows Bridge v2\r\ncd /d "%~dp0"\r\npowershell -NoProfile -ExecutionPolicy Bypass -STA -File "%~dp0nav-bridge.ps1"\r\npause\r\n
