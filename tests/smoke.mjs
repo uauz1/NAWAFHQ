@@ -54,6 +54,9 @@ if(!dash.includes('NawafHQV12?.openActivity?.()'))throw new Error('V14 activity 
 if(!dash.includes('NawafFinance?.open?.()'))throw new Error('V14 finance action is not wired');
 if(!dash.includes('HQCloud?.pull?.()'))throw new Error('V14 sync action is not wired');
 for(const f of ['integrations','QA Gate','timeline','recovery','NawafHQV23'])if(!companyOsV23.includes(f))throw new Error(`Missing V23 feature ${f}`);
+for(const financeFeature of ['watchlist','finance-watchlist','قائمة المراقبة','تحليل مع راكان'])if(!finance.includes(financeFeature))throw new Error(`Missing finance watchlist feature ${financeFeature}`);
+if(!cloud.includes('finance')||!cloud.includes('watchlist'))throw new Error('Finance watchlist is not included in client cloud sync');
+if(!stateCloud.includes('finance')||!stateCloud.includes('watchlist'))throw new Error('Finance watchlist is not included in server cloud merge');
 if(!companyOsV23Css.trim())throw new Error('V23 stylesheet empty');
 if(!html.includes('hq-company-os-v23.js')||!html.includes('hq-company-os-v23.css'))throw new Error('V23 assets not activated');
 if(!css.trim()||!iconsCss.trim()||!qualityCss.trim()||!opsCss.trim()||!ceoCss.trim()||!dashCss.trim()||!companyOsCss.trim())throw new Error('Production stylesheet empty');
