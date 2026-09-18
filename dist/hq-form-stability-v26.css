@@ -44,3 +44,10 @@ button[data-hq-submitting="1"]{opacity:.68!important;pointer-events:none!importa
   #v8-modal.show,#v23-modal.show,#v24-modal.show{padding:8px!important;padding-top:max(8px,env(safe-area-inset-top))!important;padding-bottom:max(8px,env(safe-area-inset-bottom))!important}
   #v8-modal .v8-dialog,#v23-modal .v23-dialog,#v24-modal .v24-dialog{max-height:calc(var(--hq-vv-height) - 16px)!important}
 }
+
+/* V26.1 desktop scroll-lock hardening */
+html.hq-form-open,body.hq-form-open{overflow:hidden!important;height:100%!important}
+body.hq-form-open{position:fixed!important;left:0!important;right:0!important;width:100%!important}
+#v8-modal.show,#v23-modal.show,#v24-modal.show{overflow:hidden!important;display:flex!important;align-items:center!important;justify-content:center!important}
+#v8-modal .v8-dialog,#v23-modal .v23-dialog,#v24-modal .v24-dialog{overscroll-behavior:contain!important;scrollbar-gutter:stable}
+@media(min-width:821px){#v8-modal.show,#v23-modal.show,#v24-modal.show{padding:24px!important}}
