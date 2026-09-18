@@ -34,4 +34,14 @@ jobs:
       - name: Run live browser test
         env:
           HQ_URL: https://nawaf-hq-main.onrender.com
-        run: node tests/e2e-live.mjs
+        run: |
+          set -o pipefail
+          node tests/e2e-live.mjs 2>&1 | tee live-e2e.log
+      - name: Upload live E2E diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-e2e-diagnostics-${{ github.run_id }}
+          path: live-e2e.log
+          if-no-files-found: warn
+          retention-days: 3
