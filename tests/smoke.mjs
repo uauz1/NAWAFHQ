@@ -93,7 +93,8 @@ if(!html.includes('hq-company-os-v23.js')||!html.includes('hq-company-os-v23.css
 for(const f of ['settings','employees','projects','tasks','secretary','finance','integrations','apps','ceo','exportBackup','restoreBackup','openEmployee'])if(!operationsV24.includes(f))throw new Error(`Missing V24 operations feature ${f}`);
 if(!html.includes('hq-operations-v24.js')||!html.includes('hq-operations-v24.css'))throw new Error('V24 operations center is not activated');
 if(!operationsV24Css.trim())throw new Error('V24 stylesheet empty');
-for(const mobileFix of ['position:fixed!important','single-row dock','#v23-launcher','overflow-x:auto!important'])if(!mobileShellV25.includes(mobileFix))throw new Error(`Missing V25 mobile shell fix ${mobileFix}`);
+for(const mobileFix of ['position:fixed!important','approved five-slot glass dock','#v23-launcher','grid-template-columns:repeat(5'])if(!mobileShellV25.includes(mobileFix))throw new Error(`Missing V25 mobile shell fix ${mobileFix}`);
+for(const mobileMenu of ['v24-mobile-more','v24-mobile-menu','data-v24-mobile-page'])if(!operationsV24.includes(mobileMenu))throw new Error(`Missing approved mobile overflow menu ${mobileMenu}`);
 if(!html.includes('hq-mobile-shell-v25.css'))throw new Error('V25 mobile shell is not activated');
 if(!css.trim()||!iconsCss.trim()||!qualityCss.trim()||!opsCss.trim()||!ceoCss.trim()||!dashCss.trim()||!companyOsCss.trim())throw new Error('Production stylesheet empty');
 console.log('Nawaf HQ verified worker + background execution + simplified dashboard + decisions + operations + quality + finance + cloud sync checks passed');
