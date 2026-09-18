@@ -1,0 +1,11 @@
+(function(){'use strict';
+const scenes=[['mountains','قمم هادئة'],['coast','ساحل مفتوح'],['workspace','مساحة عمل'],['forest','طبيعة عميقة']];
+let index=Math.floor(Date.now()/86400000)%scenes.length,timer=0,retries=0;
+function setScene(i,manual=false){index=(i+scenes.length)%scenes.length;document.documentElement.dataset.v22Scene=scenes[index][0];const hero=document.querySelector('.v4-hero');if(hero){hero.querySelectorAll('.v22-scenes button').forEach((b,n)=>b.classList.toggle('active',n===index));const label=hero.querySelector('.v22-scene-label');if(label)label.textContent=scenes[index][1]}if(manual)restart()}
+function greeting(){const h=document.querySelector('.v4-hero h2');if(!h||h.dataset.v22Copy)return;h.dataset.v22Copy='1';const hour=new Date().getHours(),hello=hour<12?'صباح الخير يا نواف':hour<18?'مساء الخير يا نواف':'مساء الخير يا نواف';h.innerHTML=hello+'<br><em>خل الشركة تتحرك معك.</em>';const p=document.querySelector('.v4-hero-copy>p');if(p)p.textContent='واجهة قيادة أهدأ وأوضح، تعطيك الصورة كاملة وتخليك تنتقل من القرار إلى التنفيذ بدون زحمة بصرية.'}
+function enhance(){const hero=document.querySelector('.v4-hero');if(!hero){if(retries++<20)setTimeout(enhance,300);return}retries=0;greeting();if(!hero.dataset.v22Controls){hero.dataset.v22Controls='1';const label=document.createElement('div');label.className='v22-scene-label';const controls=document.createElement('div');controls.className='v22-scenes';controls.setAttribute('aria-label','تغيير خلفية لوحة القيادة');controls.innerHTML=scenes.map((s,i)=>'<button type="button" aria-label="'+s[1]+'" data-v22-scene="'+i+'"></button>').join('');hero.append(label,controls);controls.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>setScene(Number(b.dataset.v22Scene),true)));setScene(index)}}
+function restart(){clearInterval(timer);if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches)timer=setInterval(()=>setScene(index+1),18000)}
+function boot(){setScene(index);enhance();restart();window.addEventListener('hashchange',()=>{retries=0;setTimeout(enhance,120)});document.addEventListener('click',e=>{if(e.target.closest('[data-route],.nav-btn')){retries=0;setTimeout(enhance,180)}})}
+document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot):boot();
+window.NawafHQV22={setScene:i=>setScene(Number(i),true)};
+})();
