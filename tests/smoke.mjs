@@ -24,13 +24,15 @@ const companyOs=read('hq-company-os-v15.js');
 const companyOsCss=read('hq-company-os-v15.css');
 const companyOsV23=read('hq-company-os-v23.js');
 const companyOsV23Css=read('hq-company-os-v23.css');
+const operationsV24=read('hq-operations-v24.js');
+const operationsV24Css=read('hq-operations-v24.css');
 const ceoV13=read('hq-ceo-v13.js');
 const secretary=read('hq-executive-secretary.js');
 const cloudSync=read('hq-cloud-sync.js');
 const projectExecutor=readRoot('project-executor.mjs');
 const server=readRoot('render-server-v2.mjs');
 const stateCloud=readRoot('state-cloud.mjs');
-new Script(app);new Script(agent);new Script(executor);new Script(apps);new Script(cloud);new Script(icons);new Script(finance);new Script(quality);new Script(ops);new Script(ceo);new Script(dash);new Script(companyOs);new Script(companyOsV23);new Script(secretary);new Script(ceoV13);
+new Script(app);new Script(agent);new Script(executor);new Script(apps);new Script(cloud);new Script(icons);new Script(finance);new Script(quality);new Script(ops);new Script(ceo);new Script(dash);new Script(companyOs);new Script(companyOsV23);new Script(operationsV24);new Script(secretary);new Script(ceoV13);
 for(const asset of ['hq-shell-v8.css','hq-shell-v8.js','hq-agent-runtime.js','hq-project-executor.js','hq-executive-secretary.js','hq-cloud-sync.js','hq-finance-v1.js','hq-smart-command.js','hq-secretary-truth.js','hq-truthful-task-ui-v17.js'])if(!html.includes(asset))throw new Error(`Missing asset ${asset}`);
 const appsHtml=read('apps.html');
 if(!appsHtml.includes('20260918-premium-apps-1'))throw new Error('Premium apps center design is not activated');
@@ -51,6 +53,7 @@ for(const runtime of ['NawafProjectExecutor','runTask','legacy:false','NawafAgen
 for(const syncFeature of ['/api/state','baseUpdatedAt','r.status===409','mergeState','HQCloud'])if(!cloud.includes(syncFeature))throw new Error(`Missing cloud sync feature ${syncFeature}`);
 for(const serverFeature of ['loadCloudState','saveCloudState','backgroundTick','executeRealProjectTask','VERIFIED_EVIDENCE','backgroundWorker:true'])if(!server.includes(serverFeature))throw new Error(`Missing real server worker feature ${serverFeature}`);
 for(const cloudFeature of ['export async function loadCloudState','export async function saveCloudState','STATE_CONFLICT'])if(!stateCloud.includes(cloudFeature))throw new Error(`Missing server cloud state feature ${cloudFeature}`);
+for(const syncFeature of ['notifications','archives','newestObject','deletedAt'])if(!cloudSync.includes(syncFeature)||!stateCloud.includes(syncFeature))throw new Error(`Missing protected V24 sync feature ${syncFeature}`);
 if(server.includes('task.progress=Math.max(10')||server.includes('task.progress=Math.max(20')||agent.includes('t.progress=10')||executor.includes('progress=Math.max(12')||executor.includes('progress=Math.max(55'))throw new Error('Fake progress logic remains in worker runtime');
 for(const iconFeature of ['dashboard','workforce','projects','tasks','reports','userPlus','command','external','github','edit','bolt','sync','close','apps'])if(!icons.includes(`${iconFeature}:`)&&!icons.includes(`'${iconFeature}'`)&&!icons.includes(`\"${iconFeature}\"`))throw new Error(`Missing V10 icon ${iconFeature}`);
 for(const financeFeature of ['finance','المحلل المالي ونمو الأعمال','نمو وربحية مشروع','تحليل سهم','تقييم مالي','مراجعة محفظة','لا تنفذ أي شراء أو بيع أو تحويل أو صرف أموال'])if(!finance.includes(financeFeature))throw new Error(`Missing finance feature ${financeFeature}`);
@@ -86,6 +89,9 @@ for(const mobileFeature of ['data-ceo-decisions','data-ceo-command','data-ceo-re
 if(!companyOsV23.includes('NawafHQV13?.openCenter'))throw new Error('V23 approvals must route to real CEO action center');
 if(!companyOsV23Css.trim())throw new Error('V23 stylesheet empty');
 if(!html.includes('hq-company-os-v23.js')||!html.includes('hq-company-os-v23.css'))throw new Error('V23 assets not activated');
+for(const f of ['settings','employees','projects','tasks','secretary','finance','integrations','apps','ceo','exportBackup','restoreBackup','openEmployee'])if(!operationsV24.includes(f))throw new Error(`Missing V24 operations feature ${f}`);
+if(!html.includes('hq-operations-v24.js')||!html.includes('hq-operations-v24.css'))throw new Error('V24 operations center is not activated');
+if(!operationsV24Css.trim())throw new Error('V24 stylesheet empty');
 if(!css.trim()||!iconsCss.trim()||!qualityCss.trim()||!opsCss.trim()||!ceoCss.trim()||!dashCss.trim()||!companyOsCss.trim())throw new Error('Production stylesheet empty');
 console.log('Nawaf HQ verified worker + background execution + simplified dashboard + decisions + operations + quality + finance + cloud sync checks passed');
 
