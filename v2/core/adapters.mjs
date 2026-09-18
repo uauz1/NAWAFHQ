@@ -6,6 +6,13 @@ export class AdapterRegistry {
   }
   get(id) { return this.#adapters.get(id) || null; }
   resolve(capability) { return [...this.#adapters.values()].find(a => a.capabilities.includes(capability) && a.connectionState() === 'CONNECTED') || null; }
+  resolveFor(capability, preferred = []) {
+    const prefs=(Array.isArray(preferred)?preferred:[]).map(x=>String(x||'').toLowerCase()).filter(Boolean);
+    const connected=[...this.#adapters.values()].filter(a=>a.capabilities.includes(capability)&&a.connectionState()==='CONNECTED');
+    if(!prefs.length)return connected[0]||null;
+    const preferredAdapter=connected.find(a=>prefs.some(p=>a.id.toLowerCase().includes(p)||a.provider.toLowerCase().includes(p)));
+    return preferredAdapter||connected[0]||null;
+  }
   list() { return [...this.#adapters.values()].map(a => ({id:a.id,provider:a.provider,capabilities:a.capabilities,connectionState:a.connectionState(),health:a.health()})); }
 }
 
