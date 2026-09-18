@@ -105,11 +105,17 @@ export async function discussTask(taskId,content){
 }
 
 export async function createTask(command,idempotencyKey) {
-  const route=parseCommand(command), title=String(command).trim().slice(0,140);
+  const cleanCommand=String(command).trim(),route=parseCommand(cleanCommand),title=cleanCommand.slice(0,140);
   const existing=idempotencyKey?await db.one('hq_v2_tasks',`idempotency_key=eq.${encodeURIComponent(idempotencyKey)}`):null;
   if(existing)return existing;
-  const assignment=await resolveEmployee(command,route.employeeId,route.route);
-  const [task]=await db.insert('hq_v2_tasks',{command,title,route:route.route,status:'QUEUED',employee_id:assignment.id,project_id:route.projectId,idempotency_key:idempotencyKey||null});
+  const recent=await db.list('hq_v2_tasks','archived_at=is.null&order=created_at.desc&limit=20');
+  const duplicate=recent.find(t=>normalizeText(t.command)===normalizeText(cleanCommand)&&Date.now()-Date.parse(t.created_at||0)<=90000&&!['FAILED','CANCELLED'].includes(t.status));
+  if(duplicate){
+    await event(duplicate.id,'DUPLICATE_SUPPRESSED','تم منع إنشاء نسخة مكررة من نفس الأمر خلال 90 ثانية',{requestedAt:new Date().toISOString(),idempotencyKey:idempotencyKey||null});
+    return duplicate;
+  }
+  const assignment=await resolveEmployee(cleanCommand,route.employeeId,route.route);
+  const [task]=await db.insert('hq_v2_tasks',{command:cleanCommand,title,route:route.route,status:'QUEUED',employee_id:assignment.id,project_id:route.projectId,idempotency_key:idempotencyKey||null});
   await event(task.id,'RECEIVED','تم استلام الأمر',{route:{...route,employeeId:assignment.id,assignmentReason:assignment.reason,assignmentScore:assignment.score}});
   await event(task.id,'EMPLOYEE_ASSIGNED',`تم توجيه المهمة إلى ${assignment.id}`,{reason:assignment.reason,score:assignment.score,route:route.route});
   return task;
