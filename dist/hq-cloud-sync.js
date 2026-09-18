@@ -11,6 +11,8 @@ function sanitize(s){
    if(t?.status==='COMPLETED'){
      delete t.blockedReason;delete t.blockerType;delete t.requiredTools;delete t.connectionRequest;
      t.progress=100;
+     const commit=t.executionCommit||t.applyEvidence?.commitSha||t.aiResult?.applyEvidence?.commitSha||t.aiResult?.projectExecution?.commitSha;
+     if(commit){t.executionCommit=commit;t.applyEvidence={...(t.applyEvidence||{}),commitSha:commit}}
    }
  }
  const occupying=new Set(['WORKING','RESEARCHING','REVIEWING']);
