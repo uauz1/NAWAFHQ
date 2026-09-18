@@ -46,7 +46,7 @@ if(truncated>0)throw new Error(`task instructions still truncated in state: ${tr
 if(await page.locator('[data-task]').count()){await page.locator('[data-task]').first().click();await page.waitForSelector('#v8-modal.show',{timeout:5000});await page.locator('#v8-modal [data-close]').first().click()}
 
 // Company command opens a real command form.
-await page.locator('[data-action="company-command"]:visible').first().click();await page.waitForSelector('#v8-command-form',{timeout:5000});await page.locator('#v8-modal [data-close]').first().click();
+await page.locator('[data-action="company-command"]:visible').first().click();await page.waitForSelector('#smart-command-modal.show #smart-command-form',{timeout:5000});await page.locator('#smart-command-form [data-smart-cancel]').click();
 
 // Dashboard control centers, secretary, quick command, ops panels and finance must open.
 await page.locator('[data-view="dashboard"]').first().click();await page.waitForTimeout(500);
