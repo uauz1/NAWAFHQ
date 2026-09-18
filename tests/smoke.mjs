@@ -24,6 +24,7 @@ const companyOs=read('hq-company-os-v15.js');
 const companyOsCss=read('hq-company-os-v15.css');
 const companyOsV23=read('hq-company-os-v23.js');
 const companyOsV23Css=read('hq-company-os-v23.css');
+const projectExecutor=readRoot('project-executor.mjs');
 const server=readRoot('render-server-v2.mjs');
 const stateCloud=readRoot('state-cloud.mjs');
 new Script(app);new Script(agent);new Script(executor);new Script(apps);new Script(cloud);new Script(icons);new Script(finance);new Script(quality);new Script(ops);new Script(ceo);new Script(dash);new Script(companyOs);new Script(companyOsV23);
