@@ -59,6 +59,8 @@ if(!cloud.includes('finance')||!cloud.includes('watchlist'))throw new Error('Fin
 if(!stateCloud.includes('finance')||!stateCloud.includes('watchlist'))throw new Error('Finance watchlist is not included in server cloud merge');
 for(const wfFeature of ['workflowId','goalId','workflowStage','dependsOn'])if(!companyOs.includes(wfFeature))throw new Error(`Missing company goal workflow metadata ${wfFeature}`);
 if(!companyOs.includes("t=>t.goalId===g.id"))throw new Error('Goal progress is not scoped to exact workflow tasks');
+if(!server.includes("Proposal verified only; changes are not proven applied to repository."))throw new Error('Project executor may claim unapplied proposals as complete');
+if(!server.includes("if(changed){"))throw new Error('Project executor missing changed-proposal completion guard');
 if(!server.includes('depsDone(state,t)'))throw new Error('Worker does not enforce workflow dependencies');
 if(!server.includes("t.status==='READY'&&depsDone(state,t)"))throw new Error('Background worker may select dependency-blocked tasks');
 for(const mobileFeature of ['data-ceo-decisions','data-ceo-command','data-ceo-recovery'])if(!companyOsV23.includes(mobileFeature))throw new Error(`Missing CEO mobile action ${mobileFeature}`);
