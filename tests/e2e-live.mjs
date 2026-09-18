@@ -46,13 +46,13 @@ if(truncated>0)throw new Error(`task instructions still truncated in state: ${tr
 if(await page.locator('[data-task]').count()){await page.locator('[data-task]').first().click();await page.waitForSelector('#v8-modal.show',{timeout:5000});await page.locator('#v8-modal [data-close]').first().click()}
 
 // Company command opens a real command form.
-await page.locator('[data-action="company-command"]').first().click();await page.waitForSelector('#v8-command-form',{timeout:5000});await page.locator('#v8-modal [data-close]').first().click();
+await page.locator('[data-action="company-command"]:visible').first().click();await page.waitForSelector('#v8-command-form',{timeout:5000});await page.locator('#v8-modal [data-close]').first().click();
 
 // Dashboard control centers, secretary, quick command, ops panels and finance must open.
 await page.locator('[data-view="dashboard"]').first().click();await page.waitForTimeout(500);
 if(!await page.locator('#exec-secretary-toggle').count())throw new Error('executive secretary toggle missing');
 await page.locator('#exec-secretary-toggle').click();await page.waitForTimeout(150);if(!await page.locator('#exec-secretary.open').count())throw new Error('executive secretary did not open');await page.locator('#exec-secretary-close').click();
-await page.locator('[data-v14-action="quick"]').first().click();await page.waitForSelector('#v9-modal.show #v9-quick-form',{timeout:5000});await page.locator('#v9-modal [data-v9-close]').first().click();
+await page.locator('[data-v14-action="quick"]:visible').first().click();await page.waitForSelector('#v9-modal.show #v9-quick-form',{timeout:5000});await page.locator('#v9-modal [data-v9-close]').first().click();
 if(await page.locator('[data-v14-action="decisions"]').count()){await page.locator('[data-v14-action="decisions"]').first().click();await page.waitForTimeout(250);if(!await page.locator('.v13-center.show').count())throw new Error('CEO decisions center did not open');await page.locator('.v13-center [data-v13-close]').click()}
 if(await page.locator('[data-v12-activity]').count()){await page.locator('[data-v12-activity]').click();await page.waitForTimeout(150);if(!await page.locator('.v12-panel.show').count())throw new Error('activity panel did not open');await page.locator('.v12-panel [data-v12-close]').click()}
 if(await page.locator('[data-v12-notify]').count()){await page.locator('[data-v12-notify]').click();await page.waitForTimeout(150);if(!await page.locator('.v12-panel.show').count())throw new Error('notifications panel did not open');await page.locator('.v12-panel [data-v12-close]').click()}
