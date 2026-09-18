@@ -61,6 +61,8 @@ for(const wfFeature of ['workflowId','goalId','workflowStage','dependsOn'])if(!c
 if(!companyOs.includes("t=>t.goalId===g.id"))throw new Error('Goal progress is not scoped to exact workflow tasks');
 if(!server.includes('depsDone(state,t)'))throw new Error('Worker does not enforce workflow dependencies');
 if(!server.includes("t.status==='READY'&&depsDone(state,t)"))throw new Error('Background worker may select dependency-blocked tasks');
+for(const mobileFeature of ['data-ceo-decisions','data-ceo-command','data-ceo-recovery'])if(!companyOsV23.includes(mobileFeature))throw new Error(`Missing CEO mobile action ${mobileFeature}`);
+if(!companyOsV23.includes('NawafHQV13?.openCenter'))throw new Error('V23 approvals must route to real CEO action center');
 if(!companyOsV23Css.trim())throw new Error('V23 stylesheet empty');
 if(!html.includes('hq-company-os-v23.js')||!html.includes('hq-company-os-v23.css'))throw new Error('V23 assets not activated');
 if(!css.trim()||!iconsCss.trim()||!qualityCss.trim()||!opsCss.trim()||!ceoCss.trim()||!dashCss.trim()||!companyOsCss.trim())throw new Error('Production stylesheet empty');
