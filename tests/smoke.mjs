@@ -104,3 +104,7 @@ console.log('Nawaf HQ verified worker + background execution + simplified dashbo
 
 if(!server.includes('QA_GATE_FAILED'))throw new Error('server must expose explicit QA gate failure');
 if(!server.includes("qaFailed?'QA_GATE':'MISSING_TOOL'"))throw new Error('QA failure must not be mislabeled as missing tool');
+
+if(!operationsV24.includes("const inverse={employees:'workforce',projects:'projects',tasks:'tasks',activity:'reports'}"))throw new Error('V24 navigation active state is not synchronized with the sidebar');
+if(!operationsV24.includes(".v24-workspace [data-v24-task]"))throw new Error('V24 task rows lack robust click handling');
+if(!html.includes('hq-operations-v24.js?v=20260918-nav-task-stability-1'))throw new Error('V24 navigation/task stability patch is not activated');
