@@ -79,3 +79,31 @@ main{padding:26px 28px 72px!important}.topbar{min-height:68px!important;margin-b
   .paper-order-form{grid-template-columns:1fr}
   .tool-status-grid{grid-template-columns:1fr}
 }
+
+/* V22.2 — hero typography rebalance */
+.v4-hero h2{
+  max-width:680px!important;
+  font-size:clamp(40px,4.55vw,68px)!important;
+  line-height:1.08!important;
+  letter-spacing:-.038em!important;
+}
+.v4-hero-copy{
+  max-width:780px!important;
+}
+.v4-hero-copy>p{
+  max-width:610px!important;
+  font-size:15px!important;
+  line-height:1.8!important;
+}
+@media(min-width:1400px){
+  .v4-hero h2{font-size:64px!important;max-width:700px!important}
+}
+@media(min-width:801px) and (max-width:1180px){
+  .v4-hero h2{font-size:clamp(40px,5.2vw,56px)!important;max-width:620px!important}
+}
+@media(max-width:800px){
+  .v4-hero h2{font-size:40px!important;max-width:92%!important}
+}
+@media(max-width:520px){
+  .v4-hero h2{font-size:36px!important}
+}
