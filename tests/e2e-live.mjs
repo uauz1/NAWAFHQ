@@ -50,8 +50,8 @@ await page.locator('[data-action="company-command"]:visible').first().click();aw
 
 // Dashboard control centers, secretary, quick command, ops panels and finance must open.
 await page.locator('[data-view="dashboard"]').first().click();await page.waitForTimeout(500);
-if(!await page.locator('#exec-secretary-toggle').count())throw new Error('executive secretary toggle missing');
-await page.locator('#exec-secretary-toggle').click();await page.waitForTimeout(150);if(!await page.locator('#exec-secretary.open').count())throw new Error('executive secretary did not open');await page.locator('#exec-secretary-close').click();
+await page.waitForSelector('.v20-sarah [data-v20-sarah]',{timeout:5000});await page.locator('.v20-sarah [data-v20-sarah]').click();await page.waitForSelector('#v8-command-form',{timeout:5000});await page.locator('#v8-modal [data-close]').first().click();
+if(await page.locator('#exec-secretary-toggle').count()){await page.locator('#exec-secretary-toggle').click();await page.waitForTimeout(150);if(!await page.locator('#exec-secretary.open').count())throw new Error('executive secretary did not open');await page.locator('#exec-secretary-close').click()}
 await page.locator('[data-v14-action="quick"]:visible').first().click();await page.waitForSelector('#v9-modal.show #v9-quick-form',{timeout:5000});await page.locator('#v9-modal [data-v9-close]').first().click();
 if(await page.locator('[data-v14-action="decisions"]').count()){await page.locator('[data-v14-action="decisions"]').first().click();await page.waitForTimeout(250);if(!await page.locator('.v13-center.show').count())throw new Error('CEO decisions center did not open');await page.locator('.v13-center [data-v13-close]').click()}
 if(await page.locator('[data-v12-activity]').count()){await page.locator('[data-v12-activity]').click();await page.waitForTimeout(150);if(!await page.locator('.v12-panel.show').count())throw new Error('activity panel did not open');await page.locator('.v12-panel [data-v12-close]').click()}
