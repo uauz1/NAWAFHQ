@@ -10,7 +10,7 @@ function mergeProtectedState(current={},incoming={}){const out={...current,...in
 function normalizeOperationalState(state){
  if(!state||typeof state!=='object')return false;let changed=false;const ts=new Date().toISOString();
  const tasks=Array.isArray(state.tasks)?state.tasks:[];
- for(const t of tasks){if(t?.status==='COMPLETED'){for(const k of ['blockedReason','blockerType','requiredTools','connectionRequest'])if(k in t){delete t[k];changed=true}if(t.progress!==100){t.progress=100;changed=true}}}
+ for(const t of tasks){if(t?.status==='COMPLETED'){for(const k of ['blockedReason','blockerType','requiredTools','connectionRequest'])if(k in t){delete t[k];changed=true}if(t.progress!==100){t.progress=100;changed=true}const commit=t.executionCommit||t.applyEvidence?.commitSha||t.aiResult?.applyEvidence?.commitSha||t.aiResult?.projectExecution?.commitSha;if(commit&&t.executionCommit!==commit){t.executionCommit=commit;changed=true}if(commit&&!t.applyEvidence?.commitSha){t.applyEvidence={...(t.applyEvidence||{}),commitSha:commit};changed=true}}}
  if(Array.isArray(state.connectionRequests))for(const r of state.connectionRequests){const t=tasks.find(x=>x.id===r.taskId);if(t?.status==='COMPLETED'&&['PENDING','APPROVED'].includes(r.status)){r.status='RESOLVED';r.resolvedAt=ts;r.updatedAt=ts;r.note=r.note||'تم حل الحاجة للأداة ضمن مسار التنفيذ الحالي.';changed=true}}
  const activeStatuses=new Set(['WORKING','RESEARCHING','REVIEWING','WAITING_FOR_CONNECTION','WAITING_FOR_NAWAF','BLOCKED_BY_TOOL','BLOCKED','PAUSED']);
  for(const e of (state.employees||[])){
