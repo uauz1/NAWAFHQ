@@ -59,5 +59,5 @@ if(!html.includes('hq-company-os-v23.js')||!html.includes('hq-company-os-v23.css
 if(!css.trim()||!iconsCss.trim()||!qualityCss.trim()||!opsCss.trim()||!ceoCss.trim()||!dashCss.trim()||!companyOsCss.trim())throw new Error('Production stylesheet empty');
 console.log('Nawaf HQ verified worker + background execution + simplified dashboard + decisions + operations + quality + finance + cloud sync checks passed');
 
-assert.match(server,/QA_GATE_FAILED/,'server must expose explicit QA gate failure');
-assert.match(server,/blockerType=needsConnection\?'CONNECTION_REQUEST':needsNawaf\?'APPROVAL':qaFailed\?'QA_GATE'/,'QA failure must not be mislabeled as missing tool');
+if(!server.includes('QA_GATE_FAILED'))throw new Error('server must expose explicit QA gate failure');
+if(!server.includes("qaFailed?'QA_GATE':'MISSING_TOOL'"))throw new Error('QA failure must not be mislabeled as missing tool');
