@@ -26,6 +26,7 @@ const companyOsV23=read('hq-company-os-v23.js');
 const companyOsV23Css=read('hq-company-os-v23.css');
 const ceoV13=read('hq-ceo-v13.js');
 const secretary=read('hq-executive-secretary.js');
+const cloudSync=read('hq-cloud-sync.js');
 const projectExecutor=readRoot('project-executor.mjs');
 const server=readRoot('render-server-v2.mjs');
 const stateCloud=readRoot('state-cloud.mjs');
