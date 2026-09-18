@@ -1,12 +1,13 @@
 import { chromium } from 'playwright';
 const base=process.env.HQ_URL||'https://nawaf-hq-main.onrender.com';
+const step=async(name,fn)=>{try{return await fn()}catch(e){throw new Error(`[E2E:${name}] ${e?.message||e}`)}};
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1440,height:1100}});
 const errors=[];const failed=[];
 page.on('pageerror',e=>errors.push(String(e.message||e)));
 page.on('requestfailed',r=>{const u=r.url(),method=r.method(),err=r.failure()?.errorText||'';const navigationAbort=/ERR_ABORTED/i.test(err)&&(method==='HEAD'||u===`${base}/api/state`||u===`${base}/api/state/`);if(u.startsWith(base)&&!navigationAbort)failed.push(`${method} ${u} ${err}`)});
 const open=async()=>{await page.goto(base,{waitUntil:'domcontentloaded',timeout:120000});await page.waitForSelector('#app .v8',{timeout:30000})};
-await open();
+await step('open-production',open);
 if(!await page.locator('[data-view="dashboard"]').count())throw new Error('dashboard nav missing');
 
 // Every main view must activate.
@@ -81,7 +82,7 @@ const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-wind
 if(overflow>16)throw new Error(`mobile horizontal overflow detected: ${overflow}px`);
 if(!await page.locator('[data-view="dashboard"]').count())throw new Error('mobile navigation unavailable');
 
-if(errors.length)throw new Error(`page errors: ${errors.join(' | ')}`);
-if(failed.length)throw new Error(`failed production requests: ${failed.join(' | ')}`);
+if(errors.length)throw new Error(`[E2E:page-errors] ${errors.join(' | ')}`);
+if(failed.length)throw new Error(`[E2E:failed-requests] ${failed.join(' | ')}`);
 console.log(JSON.stringify({ok:true,url:base,marker,employees:employeeIds.length,projects:projectIds.length,qaTasksCreated,cloudQaTasks:cloudCount,health:health.status,state:state.status,mobileOverflow:overflow,truncatedTasks:truncated,secretary:true,quickCommand:true,opsPanels:true,appsCenter:true},null,2));
 await browser.close();
