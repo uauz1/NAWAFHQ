@@ -30,9 +30,9 @@ export async function handleProjectApi(req,res,url,aiBackend,notifySlack){
         apply=await ar.json().catch(()=>({}));
         if(!ar.ok)apply={...apply,ok:false,httpStatus:ar.status};
       }
-      const applied=Boolean(apply?.ok===true),changed=(proposal.changedFiles||[]).length;
-      await notify(notifySlack,`${applied?'✅':'📋'} *${applied?'تم تطبيق التغيير':'اكتمل تحليل التنفيذ'} — ${project.name}*\nالمهمة: ${taskTitle}\nالملفات المتأثرة: ${changed}\nالتحقق: ${proposal.verificationPassed?'ناجح ✅':'غير مكتمل'}${proposal.summary?`\nالملخص: ${cleanText(proposal.summary,700)}`:''}`);
-      return send(res,200,{ok:true,project:{id:b.projectId,...project},execution:{status:data.status||'SUCCESS',engine:data.engine||'openhands',proposal:{repository:proposal.repository,baseCommit:proposal.baseCommit,changedFiles:proposal.changedFiles||[],hasChanges:Boolean(proposal.hasChanges),verificationPassed:Boolean(proposal.verificationPassed),checks:proposal.checks||[],summary:proposal.summary||'',diffTruncated:Boolean(proposal.diffTruncated)}},apply,applied,liveUrl:project.liveUrl});
+      const applied=Boolean(apply?.ok===true),applyCommit=cleanText(apply?.commitSha||apply?.commit||apply?.sha||apply?.result?.commitSha||'',120),changed=(proposal.changedFiles||[]).length,appliedVerified=applied&&Boolean(applyCommit);
+      await notify(notifySlack,`${appliedVerified?'✅':'📋'} *${appliedVerified?'تم تطبيق التغيير بإثبات commit':'اكتمل تحليل التنفيذ'} — ${project.name}*\nالمهمة: ${taskTitle}\nالملفات المتأثرة: ${changed}\nالتحقق: ${proposal.verificationPassed?'ناجح ✅':'غير مكتمل'}${proposal.summary?`\nالملخص: ${cleanText(proposal.summary,700)}`:''}`);
+      return send(res,200,{ok:true,project:{id:b.projectId,...project},execution:{status:data.status||'SUCCESS',engine:data.engine||'openhands',proposal:{repository:proposal.repository,baseCommit:proposal.baseCommit,changedFiles:proposal.changedFiles||[],hasChanges:Boolean(proposal.hasChanges),verificationPassed:Boolean(proposal.verificationPassed),checks:proposal.checks||[],summary:proposal.summary||'',diffTruncated:Boolean(proposal.diffTruncated)}},apply,applied:appliedVerified,applyEvidence:appliedVerified?{commitSha:applyCommit}:null,liveUrl:project.liveUrl});
     }catch(e){await notify(notifySlack,`❌ *خطأ في تنفيذ مشروع عبر NAWAF HQ*\n${cleanText(e?.message||e,700)}`);return send(res,500,{ok:false,error:String(e?.message||e)})}
   }
   return false;
