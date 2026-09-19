@@ -2,29 +2,14 @@ const $=s=>document.querySelector(s);const esc=s=>String(s??'').replace(/[&<>'"]
 const token=()=>sessionStorage.getItem('hq_v2_token')||'';
 async function api(path){const r=await fetch(path,{headers:{Authorization:`Bearer ${token()}`}});if(!r.ok)throw new Error(`HTTP_${r.status}`);return r.json();}
 function normalize(v){return String(v||'').toLowerCase().replace(/[إأآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/[ًٌٍَُِّْـ]/g,'').trim();}
-const BRIDGE_BASE='http://127.0.0.1:8765';
-const pcTargetRules=[
-  {id:'whatsapp',label:'واتساب',re:/(واتس\s*اب|واتساب|whatsapp)/i},
-  {id:'chrome',label:'كروم',re:/(كروم|chrome)/i},
-  {id:'vscode',label:'VS Code',re:/(vs\s*code|vscode|في\s*اس\s*كود|فيس\s*كود)/i},
-  {id:'nawafhq',label:'NAWAF HQ',re:/(nawaf\s*hq|الشرك[هة]|اتش\s*كيو)/i},
-  {id:'mueen',label:'مُعين',re:/(مُ?عين|mueen)/i},
-  {id:'qaddha',label:'قدّها',re:/(قد[ّ]?ها|qaddha)/i},
-  {id:'githubhq',label:'GitHub',re:/(github|جيت\s*هاب|قيت\s*هاب)/i}
+const browserShortcuts=[
+  {id:'whatsapp',label:'واتساب',url:'https://web.whatsapp.com/',re:/(واتس\s*اب|واتساب|whatsapp)/i},
+  {id:'github',label:'GitHub',url:'https://github.com/uauz1/NAWAFHQ',re:/(github|جيت\s*هاب|قيت\s*هاب)/i},
+  {id:'hq',label:'NAWAF HQ',url:'/',re:/(nawaf\s*hq|اتش\s*كيو|الشرك[هة])/i},
+  {id:'vscode',label:'VS Code',url:'vscode://',re:/(vs\s*code|vscode|في\s*اس\s*كود|فيس\s*كود)/i}
 ];
-function pcTargetFrom(text){const n=normalize(text);if(!/(افتح|شغل|شغّل|ودني|روح)/.test(n))return null;return pcTargetRules.find(x=>x.re.test(text))||null;}
-async function bridgeFetch(path,options={},timeout=1800){const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),timeout);try{return await fetch(BRIDGE_BASE+path,{...options,signal:ctrl.signal,cache:'no-store'});}finally{clearTimeout(timer);}}
-function setPcStatus(online,text=''){const badge=$('#pcStatus'),detail=$('#pcStatusText');if(badge){badge.textContent=online?'الكمبيوتر متصل':'الكمبيوتر غير متصل';badge.className='status '+(online?'good':'bad');}if(detail)detail.textContent=text||(online?'NAV Bridge شغال على هذا الكمبيوتر.':'شغّل NAV Bridge على ويندوز عشان ناڤ يفتح البرامج عندك.');}
-async function checkBridge(){try{const r=await bridgeFetch('/health',{},1200);const d=await r.json();const ok=Boolean(r.ok&&d?.ok);setPcStatus(ok);return ok;}catch{setPcStatus(false);return false;}}
-function bridgeToken(){let token=localStorage.getItem('nav_bridge_token')||'';if(token)return token;token=prompt('الصق رمز NAV Bridge الموجود داخل bridge-token.txt:','')?.trim()||'';if(token)localStorage.setItem('nav_bridge_token',token);return token;}
-async function bridgeCommand(payload,successText='تم تنفيذ الأمر على الكمبيوتر.'){const online=await checkBridge();if(!online){addLocalMessage('ما قدرت أوصل لجسر ناڤ على الكمبيوتر. شغّل start-nav-bridge.bat أول، وبعدها جرّب نفس الأمر.');return false;}const token=bridgeToken();if(!token){addLocalMessage('الجسر شغال، بس باقي رمز الربط. اضغط «ربط» والصق الرمز الموجود في bridge-token.txt.');return false;}try{const r=await bridgeFetch('/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,...payload})},4500);const d=await r.json();if(!r.ok||!d?.ok)throw new Error(d?.error||'BRIDGE_COMMAND_FAILED');addLocalMessage(successText);return true;}catch(error){if(String(error.message).includes('UNAUTHORIZED')){localStorage.removeItem('nav_bridge_token');addLocalMessage('رمز NAV Bridge غير صحيح. اضغط «ربط» وحط الرمز من جديد.');}else addLocalMessage(`الجسر متصل، لكن تنفيذ الأمر فشل (${error.message}). ما راح أقول إنه تم إلا إذا رجع تأكيد حقيقي من الكمبيوتر.`);return false;}}
-async function runPcTarget(target){return bridgeCommand({action:'open',target:target.id},`تم تنفيذ الأمر على الكمبيوتر: فتح ${target.label}.`);}
-function targetMention(text){return pcTargetRules.find(x=>x.re.test(String(text)))||null;}
-function parseTypeCommand(text){const target=targetMention(text),n=normalize(text);if(!target||!/(اكتب|اكتبي|حط|حطي|الصق|الصقي)/.test(n))return null;let body=String(text).trim().replace(/^(?:اكتب|اكتبي|حط|حطي|الصق|الصقي)\s*/i,'').trim();body=body.replace(target.re,' ').replace(/\s+/g,' ').trim();body=body.replace(/^(?:في|داخل)\s*/i,'').replace(/(?:\s+(?:في|داخل))$/i,'').trim();return body?{target,text:body}:null;}
-function parseFocusCommand(text){const target=targetMention(text);if(!target)return null;return /(ركز|ركزي|جيب|جيبي|خل|خلي|روح|ودي)/.test(normalize(text))?target:null;}
-function parseHotkeyCommand(text){const n=normalize(text),target=targetMention(text);let hotkey='';if(/اضغط.*(?:انتر|enter)/.test(n))hotkey='enter';else if(/اضغط.*(?:اسكيب|esc)/.test(n))hotkey='esc';else if(/اضغط.*(?:كنترول|ctrl).*ل/.test(n))hotkey='ctrl+l';else if(/اضغط.*(?:كنترول|ctrl).*ت/.test(n))hotkey='ctrl+t';else if(/اضغط.*(?:كنترول|ctrl).*س/.test(n))hotkey='ctrl+s';else if(/اضغط.*(?:كنترول|ctrl).*ف/.test(n))hotkey='ctrl+f';return hotkey?{hotkey,target:target?.id||''}:null;}
-async function interceptPcShortcut(event){const input=$('#messageInput'),text=input?.value?.trim();if(!text)return;const typed=parseTypeCommand(text);if(typed){event.preventDefault();event.stopImmediatePropagation();input.value='';addLocalMessage(`أكتب داخل ${typed.target.label}…`);await bridgeCommand({action:'type',target:typed.target.id,text:typed.text},`تمت كتابة النص داخل ${typed.target.label} بدون إرسال تلقائي.`);return;}const hotkey=parseHotkeyCommand(text);if(hotkey){event.preventDefault();event.stopImmediatePropagation();input.value='';await bridgeCommand({action:'hotkey',hotkey:hotkey.hotkey,target:hotkey.target},'تم تنفيذ الاختصار على الكمبيوتر.');return;}const focus=parseFocusCommand(text);if(focus){event.preventDefault();event.stopImmediatePropagation();input.value='';await bridgeCommand({action:'focus',target:focus.id},`صار ${focus.label} قدامك الآن.`);return;}const target=pcTargetFrom(text);if(!target)return;event.preventDefault();event.stopImmediatePropagation();input.value='';addLocalMessage(`أرسل للكمبيوتر: افتح ${target.label}…`);await runPcTarget(target);}
-async function connectPc(){const online=await checkBridge();if(!online){alert('NAV Bridge مو شغال على هذا الكمبيوتر. شغّل start-nav-bridge.bat ثم اضغط ربط مرة ثانية.');return;}const current=localStorage.getItem('nav_bridge_token')||'';const token=prompt('الصق رمز NAV Bridge من bridge-token.txt:',current)?.trim();if(token){localStorage.setItem('nav_bridge_token',token);setPcStatus(true,'الجسر شغال ورمز الربط محفوظ على هذا المتصفح.');}}
+function browserShortcutFrom(text){const n=normalize(text);if(!/(افتح|شغل|شغّل|ودني|روح)/.test(n))return null;return browserShortcuts.find(x=>x.re.test(String(text)))||null;}
+async function interceptBrowserShortcut(event){const input=$('#messageInput'),text=input?.value?.trim();if(!text)return;const shortcut=browserShortcutFrom(text);if(!shortcut)return;event.preventDefault();event.stopImmediatePropagation();input.value='';addLocalMessage(`أفتح لك ${shortcut.label} الآن.`);if(shortcut.url.startsWith('vscode://')){location.href=shortcut.url;}else window.open(shortcut.url,'_blank','noopener,noreferrer');}
 function projectsFrom(ctx){return ctx?.company?.projects||[];}
 function adminUrl(p){return p?.metadata?.admin_url||'';}
 function renderProjects(ctx){const box=$('#projectShortcuts');if(!box)return;const projects=projectsFrom(ctx);box.innerHTML=projects.map(p=>`<article class="project-short"><div><strong>${esc(p.name_ar||p.name_en||p.id)}</strong><small>${esc(p.status||'')}</small></div><div class="project-short-actions">${p.live_url?`<a href="${esc(p.live_url)}" target="_blank" rel="noreferrer">فتح</a>`:''}${adminUrl(p)?`<a class="admin" href="${esc(adminUrl(p))}" target="_blank" rel="noreferrer">لوحة التحكم</a>`:''}</div></article>`).join('')||'<p class="meta">ما فيه مشاريع محفوظة.</p>';}
@@ -34,15 +19,6 @@ async function refresh(){try{const d=await api('/api/v2/nav/context');renderProj
 function findProject(ctx,text){const t=normalize(text);return projectsFrom(ctx).find(p=>[p.id,p.name_ar,p.name_en].filter(Boolean).some(n=>t.includes(normalize(n))));}
 function addLocalMessage(text){const box=$('#messages');if(!box)return;const el=document.createElement('article');el.className='msg assistant';el.textContent=text;box.append(el);box.scrollTop=box.scrollHeight;}
 async function interceptShortcut(event){const input=$('#messageInput');const text=input?.value?.trim();if(!text)return;const n=normalize(text);if(!/(افتح|ودي|روح)/.test(n)||!/(لوحه التحكم|لوحة التحكم|داشبورد|dashboard|المشروع|التطبيق)/.test(n))return;event.preventDefault();event.stopImmediatePropagation();try{const d=await api('/api/v2/nav/context'),p=findProject(d.data,text);if(!p){addLocalMessage('ما قدرت أحدد المشروع. قل مثلًا: افتح لوحة تحكم مُعين.');return;}let url='';if(/لوحه التحكم|لوحة التحكم|داشبورد|dashboard/.test(n))url=adminUrl(p);else url=p.live_url;if(!url){addLocalMessage(`مشروع ${p.name_ar||p.name_en} ما عنده رابط ${/لوحه التحكم|لوحة التحكم|داشبورد|dashboard/.test(n)?'لوحة تحكم':'فتح'} محفوظ للحين.`);return;}input.value='';addLocalMessage(`أفتح لك ${/لوحه التحكم|لوحة التحكم|داشبورد|dashboard/.test(n)?'لوحة تحكم':'مشروع'} ${p.name_ar||p.name_en} الآن.`);window.open(url,'_blank','noopener,noreferrer');}catch{addLocalMessage('تعذر فتح الاختصار الآن. جرّب من بطاقة المشروع على اليمين.');}}
-const form=$('#chatForm');
-if(form){
-  form.addEventListener('submit',interceptPcShortcut,true);
-  form.addEventListener('submit',interceptShortcut,true);
-  const input=$('#messageInput');
-  if(input)input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();form.requestSubmit();}});
-}
-document.querySelectorAll('[data-pc-target]').forEach(b=>b.onclick=()=>{const target=pcTargetRules.find(x=>x.id===b.dataset.pcTarget);if(target)runPcTarget(target);});
-const pcConnect=$('#pcConnectBtn');if(pcConnect)pcConnect.onclick=connectPc;
-checkBridge();setInterval(checkBridge,30000);
+const form=$('#chatForm');if(form){form.addEventListener('submit',interceptBrowserShortcut,true);form.addEventListener('submit',interceptShortcut,true);const input=$('#messageInput');if(input)input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();form.requestSubmit();}});}
 const observer=new MutationObserver(()=>renderToolCount());const caps=$('#capabilities');if(caps)observer.observe(caps,{childList:true,subtree:true});
 refresh();setInterval(refresh,60000);
