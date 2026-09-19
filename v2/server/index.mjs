@@ -42,6 +42,7 @@ const companyWords=['الشركه','الشركة','موظف','الموظفين',
 const normalizeText=v=>String(v||'').toLowerCase().replace(/[إأآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').trim();
 const isCompanyIntent=message=>{const t=normalizeText(message);return companyWords.some(w=>t.includes(normalizeText(w)));};
 const connectorIntent=message=>{const t=normalizeText(message);return connectorIntentRules.find(rule=>rule.words.some(w=>t.includes(normalizeText(w))))||null;};
+const browserOpenIntent=message=>{const t=normalizeText(message);if(!/(افتح|شغل|شغّل|روح|ودي)/.test(t))return null;const targets=[['whatsapp',['واتساب','واتس اب','whatsapp']],['vscode',['vs code','vscode','في اس كود']],['mueen',['معين','مُعين']],['github',['github','قيت هب','جيت هب']],['hq',['nawaf hq','اتش كيو','الشركه','الشركة']]];for(const [id,words] of targets){if(words.some(w=>t.includes(normalizeText(w))))return id;}return null;};
 
 async function syncToolConnections() {
   if(!dbConfigured())return;
@@ -102,7 +103,9 @@ async function api(req,res,url){
   if(memoryArchive&&req.method==='POST'){const rows=await db.update('hq_v2_nav_memory',`id=eq.${memoryArchive[1]}&active=eq.true`,{active:false,updated_at:new Date().toISOString()});if(!rows.length)return json(res,404,{ok:false,error:'MEMORY_NOT_FOUND'});broadcast('nav.memory.changed',{id:memoryArchive[1]});return json(res,200,{ok:true});}
   if(url.pathname==='/api/v2/nav/chat'&&req.method==='POST'){
     const b=await body(req),message=String(b.message||'').trim();if(!message)return json(res,400,{ok:false,error:'MESSAGE_REQUIRED'});
-    const userRows=await db.insert('hq_v2_nav_messages',{role:'user',content:message.slice(0,8000),mode:isCompanyIntent(message)?'company':'personal',metadata:{source:'nav_web'}});
+    const openTarget=browserOpenIntent(message);
+    const userRows=await db.insert('hq_v2_nav_messages',{role:'user',content:message.slice(0,8000),mode:openTarget?'personal':isCompanyIntent(message)?'company':'personal',metadata:{source:'nav_web'}});
+    if(openTarget){const text='هذا أمر فتح للواجهة. ما راح أقول لك إنه انفتح إلا إذا المتصفح نفّذه فعليًا.';await db.insert('hq_v2_nav_messages',{role:'assistant',content:text,mode:'personal',metadata:{kind:'browser_action',target:openTarget}});return json(res,200,{ok:true,kind:'browser_action',target:openTarget,text});}
     if(isCompanyIntent(message)){
       const task=await createTask(message,req.headers['idempotency-key']);await db.insert('hq_v2_nav_messages',{role:'assistant',content:`حوّلت طلبك لمحرك الشركة الحقيقي. المهمة: ${task.title}`,mode:'company',task_id:task.id,metadata:{kind:'company_task'}});broadcast('task.created',task);setImmediate(()=>executeTask(task.id).then(()=>broadcast('state.changed',{taskId:task.id})).catch(error=>broadcast('task.error',{taskId:task.id,error:String(error.message||error)})));return json(res,202,{ok:true,kind:'company_task',task,userMessageId:userRows?.[0]?.id});
     }
