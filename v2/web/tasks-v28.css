@@ -91,3 +91,22 @@ body.tasks-route #taskDialogTitle{max-width:560px;margin:5px 0 0;font-size:20px;
   .task-open-btn{grid-column:2}
 }
 @media(prefers-reduced-motion:reduce){.ops-task{transition:none}}
+/* V29 stale-view fallback: keep old task-table builds readable until the new module replaces them */
+body:has(#view .table-wrap) .rail{display:none!important}
+body:has(#view .table-wrap) .shell{grid-template-columns:220px minmax(0,1fr)!important}
+body:has(#view .table-wrap) main{padding:22px clamp(18px,2.5vw,36px) 70px!important}
+body:has(#view .table-wrap) .topbar{margin-bottom:14px!important}
+body:has(#view .table-wrap) #view{max-width:1560px;margin:0 auto}
+#view .table-wrap{margin-top:0!important;border-radius:16px!important;overflow:hidden!important;border:1px solid rgba(133,165,194,.14)!important;background:rgba(7,13,20,.72)!important}
+#view .table-wrap table{width:100%!important;border-collapse:separate!important;border-spacing:0!important;font-size:12px!important}
+#view .table-wrap th{padding:12px 14px!important;color:#8fa0b1!important;font-size:10px!important;font-weight:650!important;background:#0c141d!important;position:sticky!important;top:0!important;z-index:1!important}
+#view .table-wrap td{padding:13px 14px!important;line-height:1.55!important;vertical-align:middle!important;border-top:1px solid rgba(133,165,194,.09)!important;color:#dfe8f0!important}
+#view .table-wrap tbody tr:hover td{background:rgba(116,200,255,.035)!important}
+#view .table-wrap td:first-child{min-width:420px!important;font-size:12px!important;font-weight:550!important}
+#view .table-wrap .status{font-size:10px!important}
+@media(max-width:900px){
+  body:has(#view .table-wrap) .shell{display:block!important}
+  body:has(#view .table-wrap) main{padding:14px 10px 90px!important}
+  #view .table-wrap{overflow:auto!important}
+  #view .table-wrap table{min-width:900px!important}
+}
