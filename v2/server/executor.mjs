@@ -104,8 +104,19 @@ export async function discussTask(taskId,content){
   return {message,employee,model:reply.model};
 }
 
+function cleanTaskTitle(command){
+  const raw=String(command||'').replace(/\r/g,'').trim();
+  const first=(raw.split('\n').map(x=>x.trim()).find(Boolean)||raw)
+    .replace(/^#{1,6}\s*/,'')
+    .replace(/^[-*•]\s*/,'')
+    .replace(/\*\*/g,'')
+    .replace(/__+/g,'')
+    .replace(/\s+/g,' ')
+    .trim();
+  return (first||'مهمة جديدة').slice(0,110);
+}
 export async function createTask(command,idempotencyKey) {
-  const cleanCommand=String(command).trim(),route=parseCommand(cleanCommand),title=cleanCommand.slice(0,140);
+  const cleanCommand=String(command).trim(),route=parseCommand(cleanCommand),title=cleanTaskTitle(cleanCommand);
   const existing=idempotencyKey?await db.one('hq_v2_tasks',`idempotency_key=eq.${encodeURIComponent(idempotencyKey)}`):null;
   if(existing)return existing;
   const recent=await db.list('hq_v2_tasks','archived_at=is.null&order=created_at.desc&limit=20');
@@ -131,7 +142,8 @@ export async function executeTask(taskId) {
     const smartRoutes=['GENERAL','RESEARCH','DESIGN'];
     const selectedEmployee=task.employee_id?await db.one('hq_v2_employees',`id=eq.${encodeURIComponent(task.employee_id)}`):null;
     const preferredTools=selectedEmployee?.preferred_tools||[];
-    const adapter=parsed.route==='PROJECT_STATUS'?{id:'project_status',provider:'NAWAF HQ Project Status',execute:executeProjectStatus}:smartRoutes.includes(parsed.route)?{id:'smart_employee',provider:'Gemini Employee Brain',execute:executeSmartEmployee}:registry.resolveFor(capability,preferredTools);
+    const useSmartEmployee=smartRoutes.includes(parsed.route)||(parsed.route==='QA'&&!task.project_id);
+    const adapter=parsed.route==='PROJECT_STATUS'?{id:'project_status',provider:'NAWAF HQ Project Status',execute:executeProjectStatus}:useSmartEmployee?{id:'smart_employee',provider:'Gemini Employee Brain',execute:executeSmartEmployee}:registry.resolveFor(capability,preferredTools);
     if(!adapter){await setTask(task,'WAITING_FOR_CONNECTION',{adapter_id:null});const existing=await db.one('hq_v2_connection_requests',`task_id=eq.${task.id}&provider=eq.${encodeURIComponent(capability)}&status=in.(PENDING,APPROVED)`);if(!existing)await db.insert('hq_v2_connection_requests',{task_id:task.id,employee_id:task.employee_id,provider:capability,reason:`يلزم اتصال يدعم ${capability}`,permissions:[capability],costs_money:false});await releaseEmployee(task);return task;}
     await setTask(task,'PLANNING',{adapter_id:adapter.id,plan:[{stage:'collect_facts'},{stage:'execute'},{stage:'validate'}]});
     await event(task.id,'TOOL_SELECTED',`تم اختيار ${adapter.provider||adapter.id}`,{adapterId:adapter.id,provider:adapter.provider||adapter.id,preferredTools,matchedPreference:preferredTools.length?preferredTools.some(x=>String(adapter.id).toLowerCase().includes(String(x).toLowerCase())||String(adapter.provider||'').toLowerCase().includes(String(x).toLowerCase())):false});
@@ -163,6 +175,13 @@ export async function executeTask(taskId) {
 }
 
 export async function processQueue(limit=2) {
+  const misrouted=await db.list('hq_v2_tasks','archived_at=is.null&status=eq.WAITING_FOR_CONNECTION&route=eq.QA&project_id=is.null&order=created_at.asc&limit=20');
+  for(const task of misrouted){
+    if(String(task.error_message||'').includes('PROJECT_REPOSITORY')){
+      await db.update('hq_v2_tasks',`id=eq.${task.id}`,{status:'QUEUED',error_class:null,error_message:null,adapter_id:null,updated_at:new Date().toISOString()},false);
+      await event(task.id,'AUTO_RECOVERED','تم إصلاح توجيه QA العام تلقائيًا وإعادة المهمة للطابور',{reason:'QA_WITHOUT_PROJECT_DOES_NOT_REQUIRE_REPOSITORY'});
+    }
+  }
   const tasks=await db.list('hq_v2_tasks',`archived_at=is.null&status=in.(QUEUED,PAUSED_EXTERNAL)&or=(next_retry_at.is.null,next_retry_at.lte.${encodeURIComponent(new Date().toISOString())})&order=created_at.asc&limit=${limit}`);
   for(const task of tasks){if(task.status==='PAUSED_EXTERNAL')await db.update('hq_v2_tasks',`id=eq.${task.id}`,{status:'QUEUED',updated_at:new Date().toISOString()},false);try{await executeTask(task.id)}catch(error){console.error(JSON.stringify({level:'error',taskId:task.id,employeeId:task.employee_id,projectId:task.project_id,route:task.route,stage:'execute',result:'failed',error:String(error.message||error)}));}}
   return tasks.length;
